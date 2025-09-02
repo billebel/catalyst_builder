@@ -1,0 +1,283 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.catalyst.dev/pack.schema.json",
+  "title": "Catalyst Knowledge Pack Schema",
+  "description": "Schema for validating Catalyst Knowledge Pack configurations",
+  "type": "object",
+  "required": ["metadata", "connection"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["name", "version", "description", "vendor", "license", "compatibility", "domain"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Pack name identifier"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+",
+          "description": "Semantic version"
+        },
+        "description": {
+          "type": "string",
+          "description": "Pack description"
+        },
+        "vendor": {
+          "type": "string",
+          "description": "Pack vendor/author"
+        },
+        "license": {
+          "type": "string",
+          "description": "License identifier"
+        },
+        "compatibility": {
+          "type": "string",
+          "description": "Compatible MCP server versions"
+        },
+        "domain": {
+          "type": "string",
+          "description": "Business domain"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Categorization tags"
+        },
+        "pricing_tier": {
+          "type": "string",
+          "enum": ["free", "basic", "premium", "enterprise"],
+          "default": "free"
+        },
+        "required_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["rest", "database", "message_queue", "filesystem", "ssh", "grpc", "websocket"]
+        },
+        "base_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 30
+        },
+        "verify_ssl": {
+          "oneOf": [
+            {"type": "boolean"},
+            {"type": "string"}
+          ],
+          "default": true
+        },
+        "auth": {
+          "type": "object",
+          "required": ["method"],
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": ["basic", "bearer", "api_key", "oauth2", "aws_iam", "ssh_key", "certificate", "kerberos", "custom"]
+            },
+            "config": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "retry_policy": {
+          "type": "object",
+          "properties": {
+            "max_retries": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 3
+            },
+            "backoff": {
+              "type": "string",
+              "enum": ["exponential", "linear", "fixed"],
+              "default": "exponential"
+            },
+            "backoff_factor": {
+              "type": "number",
+              "minimum": 0,
+              "default": 1.0
+            }
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/tool"
+        }
+      }
+    },
+    "prompts": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/prompt"
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/resource"
+        }
+      }
+    },
+    "error_mapping": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "definitions": {
+    "tool": {
+      "type": "object",
+      "required": ["type", "description"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["list", "details", "search", "execute", "query", "command", "stream", "batch", "transaction"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+          "default": "GET"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/parameter"
+          }
+        },
+        "transform": {
+          "$ref": "#/definitions/transform"
+        },
+        "sql": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "number", "boolean", "array", "object"]
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "default": {},
+        "description": {
+          "type": "string"
+        },
+        "enum": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "transform": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["jq", "javascript", "python", "template"]
+        },
+        "expression": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        }
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "required": ["description", "template"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string"
+        },
+        "suggested_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "required": ["type", "url", "description"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["documentation", "api_reference", "tutorial", "example", "support"]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,138 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest black isort mypy
+        
+    - name: Code quality checks
+      run: |
+        # Format check
+        black --check catalyst_pack_schemas/ || (echo "❌ Code formatting issues found. Run 'black catalyst_pack_schemas/' to fix." && exit 1)
+        
+        # Import sorting check  
+        isort --check-only catalyst_pack_schemas/ || (echo "❌ Import sorting issues found. Run 'isort catalyst_pack_schemas/' to fix." && exit 1)
+        
+        # Type checking
+        mypy catalyst_pack_schemas/ || echo "⚠️ Type checking warnings found"
+        
+    - name: Test package installation
+      run: |
+        # Test basic imports
+        python -c "
+        import catalyst_pack_schemas
+        from catalyst_pack_schemas import Pack, PackValidator, PackBuilder
+        from catalyst_pack_schemas.cli import main
+        print('✅ All imports successful')
+        print(f'Package version: {catalyst_pack_schemas.__version__}')
+        "
+        
+    - name: Test CLI functionality  
+      run: |
+        # Test CLI help
+        python -m catalyst_pack_schemas.cli --help
+        
+        # Test pack creation
+        python -m catalyst_pack_schemas.cli create test-pack --type rest --description "Test pack"
+        
+        # Test pack validation
+        python -m catalyst_pack_schemas.cli validate test-pack/
+        
+        echo "✅ CLI tests passed"
+        
+    - name: Run tests (if test directory exists)
+      run: |
+        if [ -d "tests" ]; then
+          pytest tests/ -v
+        else
+          echo "No tests directory found, skipping pytest"
+        fi
+
+  build-test:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+        
+    - name: Build package
+      run: |
+        python -m build
+        echo "✅ Package built successfully"
+        
+    - name: Verify package
+      run: |
+        twine check dist/*
+        echo "✅ Package verification passed"
+        
+    - name: Test installation from wheel
+      run: |
+        pip install dist/*.whl
+        python -c "
+        import catalyst_pack_schemas
+        print(f'✅ Wheel installation successful')
+        print(f'Version: {catalyst_pack_schemas.__version__}')
+        "
+
+  security-scan:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install security tools
+      run: |
+        pip install bandit safety
+        pip install -e .
+        
+    - name: Run security scans
+      run: |
+        # Bandit security scan
+        bandit -r catalyst_pack_schemas/ -ll || echo "⚠️ Bandit found potential security issues"
+        
+        # Safety check for known vulnerabilities
+        safety check || echo "⚠️ Safety check completed with warnings"
+        
+        echo "🔒 Security scan completed"

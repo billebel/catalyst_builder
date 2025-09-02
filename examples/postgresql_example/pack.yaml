@@ -1,0 +1,89 @@
+metadata:
+  name: postgresql-example
+  version: 1.0.0
+  description: PostgreSQL database integration example
+  author: Catalyst Team
+  tags:
+    - database
+    - postgresql
+    - sql
+    - example
+
+connection:
+  type: database
+  engine: postgresql
+  host: "${DB_HOST}"
+  port: "${DB_PORT:-5432}"
+  database: "${DB_NAME}"
+  auth:
+    method: basic
+    username: "${DB_USER}"
+    password: "${DB_PASSWORD}"
+
+tools:
+  - name: execute_query
+    type: query
+    description: Execute a custom SQL query
+    query_template: "{query}"
+    parameters:
+      - name: query
+        type: string
+        required: true
+        description: SQL query to execute
+        
+  - name: list_tables
+    type: list
+    description: List all tables in the database
+    query_template: |
+      SELECT 
+        table_name,
+        table_schema,
+        table_type
+      FROM information_schema.tables 
+      WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+      ORDER BY table_schema, table_name;
+      
+  - name: table_info
+    type: details
+    description: Get detailed information about a table
+    query_template: |
+      SELECT 
+        column_name,
+        data_type,
+        is_nullable,
+        column_default,
+        character_maximum_length
+      FROM information_schema.columns 
+      WHERE table_name = '{table_name}'
+      ORDER BY ordinal_position;
+    parameters:
+      - name: table_name
+        type: string
+        required: true
+        description: Name of the table to analyze
+        
+  - name: row_count
+    type: details
+    description: Get row count for a table
+    query_template: "SELECT COUNT(*) as row_count FROM {table_name};"
+    parameters:
+      - name: table_name
+        type: string
+        required: true
+        description: Name of the table to count
+
+prompts:
+  - name: explain_query
+    description: Explain what a SQL query does
+    template: |
+      Please explain what the following SQL query does:
+      
+      ```sql
+      {query}
+      ```
+      
+      Break down:
+      1. What data it retrieves
+      2. Any joins or relationships
+      3. Filtering conditions
+      4. Expected results

@@ -1,0 +1,22 @@
+[pypi]
+username = __token__
+password = pypi-YOUR_ACTUAL_TOKEN_HERE
+
+[testpypi]
+username = __token__
+password = pypi-YOUR_TESTPYPI_TOKEN_HERE
+
+# Instructions:
+# 1. Copy this file to ~/.pypirc (your home directory)
+# 2. Replace YOUR_ACTUAL_TOKEN_HERE with your real PyPI token
+# 3. Replace YOUR_TESTPYPI_TOKEN_HERE with your TestPyPI token (optional)
+# 4. Keep the __token__ username exactly as shown
+# 5. Include the full token including the pypi- prefix
+#
+# On Windows: Copy to C:\Users\<username>\.pypirc
+# On Mac/Linux: Copy to ~/.pypirc
+#
+# Example token format: pypi-AgEIcHlwaS5vcmcCJGZhZmE5...
+#
+# Never commit this file with real tokens!
+# This template is safe to commit.

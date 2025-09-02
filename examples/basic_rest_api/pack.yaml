@@ -1,0 +1,62 @@
+metadata:
+  name: basic-rest-api
+  version: 1.0.0
+  description: Basic REST API integration example
+  author: Catalyst Team
+  tags:
+    - rest
+    - api
+    - example
+
+connection:
+  type: rest
+  base_url: "${API_BASE_URL}"
+  auth:
+    method: bearer
+    token: "${API_TOKEN}"
+
+tools:
+  - name: list_items
+    type: list
+    description: List all items from the API
+    endpoint: /items
+    method: GET
+    
+  - name: get_item
+    type: details
+    description: Get details for a specific item
+    endpoint: /items/{id}
+    method: GET
+    parameters:
+      - name: id
+        type: string
+        required: true
+        description: Item ID to retrieve
+        
+  - name: search_items
+    type: search
+    description: Search for items
+    endpoint: /search
+    method: GET
+    parameters:
+      - name: query
+        type: string
+        required: true
+        description: Search query
+      - name: limit
+        type: integer
+        required: false
+        default: 10
+        description: Maximum number of results
+
+prompts:
+  - name: summarize_item
+    description: Summarize item information
+    template: |
+      Please summarize the following item information:
+      
+      Name: {item.name}
+      Description: {item.description}
+      Status: {item.status}
+      
+      Provide a concise summary highlighting the key details.
