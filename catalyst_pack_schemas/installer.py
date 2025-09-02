@@ -3,13 +3,41 @@
 import os
 import shutil
 import yaml
+import json
+import subprocess
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from urllib.parse import urlparse
+from dataclasses import dataclass, asdict
 import requests
 
 from .models import PackMetadata
 from .validators import PackValidator
+
+
+@dataclass
+class DeploymentTarget:
+    """Deployment target configuration."""
+    type: str  # local, ssh, docker, http, git
+    location: str  # path, url, container, etc.
+    config: Dict[str, Any] = None
+    
+    def __post_init__(self):
+        if self.config is None:
+            self.config = {}
+
+
+@dataclass  
+class DeploymentOptions:
+    """Deployment options and settings."""
+    mode: str = "development"  # development, staging, production
+    validate: bool = True
+    backup: bool = True
+    hot_reload: bool = False
+    env_file: Optional[str] = None
+    secrets_source: Optional[str] = None
+    dry_run: bool = False
+    force: bool = False
 
 
 class InstalledPack:

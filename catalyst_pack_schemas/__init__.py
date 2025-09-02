@@ -35,12 +35,24 @@ from .builder import (
     PackBuilder,
     PackFactory,
     quick_pack,
+    create_pack,
 )
 
 from .installer import (
     PackInstaller,
     InstalledPack,
     PackRegistry,
+    DeploymentTarget,
+    DeploymentOptions,
+)
+
+from .utils import (
+    discover_packs,
+    load_pack_collection,
+    get_pack_statistics,
+    create_pack_index,
+    export_pack_metadata,
+    validate_pack_structure,
 )
 
 __version__ = "1.0.0"
@@ -75,9 +87,20 @@ __all__ = [
     "PackBuilder",
     "PackFactory",
     "quick_pack",
+    "create_pack",
     
     # Installer
     "PackInstaller",
-    "InstalledPack",
+    "InstalledPack", 
     "PackRegistry",
+    "DeploymentTarget",
+    "DeploymentOptions",
+    
+    # Utils
+    "discover_packs",
+    "load_pack_collection",
+    "get_pack_statistics",
+    "create_pack_index",
+    "export_pack_metadata",
+    "validate_pack_structure",
 ]
