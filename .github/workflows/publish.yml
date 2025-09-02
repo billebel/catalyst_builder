@@ -46,7 +46,7 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
-        echo "Publishing catalyst-pack-schemas to PyPI..."
+        echo "Publishing catalyst-builder to PyPI..."
         twine upload dist/* --verbose
         echo "✅ Successfully published to PyPI"
         
@@ -54,9 +54,9 @@ jobs:
       run: |
         echo "## 🚀 PyPI Deployment Successful" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Package:** catalyst-pack-schemas" >> $GITHUB_STEP_SUMMARY
+        echo "**Package:** catalyst-builder" >> $GITHUB_STEP_SUMMARY
         echo "**Version:** $(python setup.py --version 2>/dev/null || python -c 'import catalyst_pack_schemas; print(catalyst_pack_schemas.__version__)')" >> $GITHUB_STEP_SUMMARY
-        echo "**PyPI URL:** https://pypi.org/project/catalyst-pack-schemas/" >> $GITHUB_STEP_SUMMARY
+        echo "**PyPI URL:** https://pypi.org/project/catalyst-builder/" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
         echo "1. Update dependent repositories to use new version" >> $GITHUB_STEP_SUMMARY
