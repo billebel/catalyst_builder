@@ -395,16 +395,16 @@ integrations:
 - **Test Auto-Modifications**: Validate automatic enhancements work
 - **Test Environment Overrides**: Verify dev/staging/prod differences
 
-## Example: Complete Enterprise Pack Guardrails
+## Example: Comprehensive Guardrails Implementation
 
-See `production/salesforce_enterprise/guardrails.yaml` for a comprehensive 455-line example implementing:
-- Complete SOX compliance automation
-- Enterprise API rate limiting
-- Comprehensive pattern blocking (4 categories)
-- Warning system (3 categories) 
-- Auto-modifications (3 types)
+A complete guardrails configuration can implement:
+- SOX/GDPR compliance automation
+- API rate limiting and throttling
+- Pattern blocking (multiple categories)
+- Warning systems for suspicious operations
+- Automatic security enhancements
 - Environment-specific overrides
-- User role-based permissions
-- Audit trail integration
+- Role-based access controls
+- Complete audit trail integration
 
-This transforms any pack into an enterprise-grade, compliance-ready solution with zero code changes required.
+These guardrails provide comprehensive security and compliance coverage through YAML configuration.
