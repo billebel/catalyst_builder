@@ -9,8 +9,9 @@ import json
 
 from .models import Pack
 from .validators import PackValidator
-from .builder import PackBuilder, PackFactory
-from .installer import PackInstaller
+from .builder import PackBuilder, PackFactory, create_pack
+from .installer import PackInstaller, DeploymentOptions, DeploymentTarget
+from .utils import discover_packs, get_pack_statistics, create_pack_index, validate_pack_structure
 
 
 class CLI:
@@ -22,7 +23,7 @@ class CLI:
     def _create_parser(self) -> argparse.ArgumentParser:
         """Create the main argument parser."""
         parser = argparse.ArgumentParser(
-            description="Catalyst Pack Schemas - Open-source toolkit for building and managing catalyst packs",
+            description="Catalyst Pack Schemas - Complete toolkit for building and managing catalyst packs",
             prog="catalyst-packs"
         )
         
@@ -31,28 +32,67 @@ class CLI:
         # Create command
         create_parser = subparsers.add_parser('create', help='Create a new pack')
         create_parser.add_argument('name', help='Pack name')
-        create_parser.add_argument('--type', choices=['rest', 'database', 'monitoring'], 
+        create_parser.add_argument('--type', choices=['rest', 'database', 'ssh', 'monitoring'], 
                                  default='rest', help='Pack type')
         create_parser.add_argument('--output', '-o', default='.', help='Output directory')
+        create_parser.add_argument('--domain', '-d', default='general', help='Business domain')
+        create_parser.add_argument('--vendor', '-v', default='Community', help='Pack vendor')
         create_parser.add_argument('--base-url', help='Base URL for REST API packs')
         create_parser.add_argument('--description', help='Pack description')
         
         # Validate command
         validate_parser = subparsers.add_parser('validate', help='Validate pack(s)')
-        validate_parser.add_argument('path', help='Path to pack file or directory')
+        validate_parser.add_argument('path', nargs='?', default='.', help='Path to pack file or directory')
         validate_parser.add_argument('--strict', action='store_true', help='Strict validation mode')
         validate_parser.add_argument('--format', choices=['text', 'json'], default='text')
+        validate_parser.add_argument('--summary', action='store_true', help='Show only summary statistics')
         
-        # Install command
+        # Install command  
         install_parser = subparsers.add_parser('install', help='Install a pack')
         install_parser.add_argument('source', help='Pack source (file, directory, or URL)')
         install_parser.add_argument('--target', default='./installed_packs', help='Installation directory')
         install_parser.add_argument('--dry-run', action='store_true', help='Show what would be installed')
         
         # List command
-        list_parser = subparsers.add_parser('list', help='List installed packs')
-        list_parser.add_argument('--target', default='./installed_packs', help='Installation directory')
+        list_parser = subparsers.add_parser('list', help='List discovered packs')
+        list_parser.add_argument('path', nargs='?', default='.', help='Path to search for packs')
         list_parser.add_argument('--format', choices=['text', 'json'], default='text')
+        list_parser.add_argument('--stats', action='store_true', help='Show collection statistics')
+        
+        # Index command
+        index_parser = subparsers.add_parser('index', help='Create pack index file')
+        index_parser.add_argument('path', nargs='?', default='.', help='Base directory to index')
+        index_parser.add_argument('--output', '-o', default='PACK_INDEX.md', help='Output file')
+        
+        # Deploy command
+        deploy_parser = subparsers.add_parser('deploy', help='Deploy pack to MCP server')
+        deploy_parser.add_argument('pack', help='Pack path or URL to deploy')
+        deploy_parser.add_argument('--target', '-t', help='Deployment target (auto-detected if not specified)')
+        deploy_parser.add_argument('--mode', '-m', choices=['development', 'staging', 'production'],
+                                  default='development', help='Deployment mode')
+        deploy_parser.add_argument('--env-file', help='Environment file to use')
+        deploy_parser.add_argument('--secrets', help='Secrets source (vault://, aws://, file://)')
+        deploy_parser.add_argument('--no-validate', action='store_true', help='Skip pack validation')
+        deploy_parser.add_argument('--no-backup', action='store_true', help='Skip backup creation')
+        deploy_parser.add_argument('--hot-reload', action='store_true', help='Enable hot reload')
+        deploy_parser.add_argument('--dry-run', action='store_true', help='Show what would be deployed')
+        deploy_parser.add_argument('--force', action='store_true', help='Force deployment even if validation fails')
+        
+        # Status command
+        status_parser = subparsers.add_parser('status', help='Show deployment status')
+        status_parser.add_argument('--target', '-t', help='Deployment target to check')
+        status_parser.add_argument('--format', choices=['text', 'json'], default='text')
+        
+        # Rollback command
+        rollback_parser = subparsers.add_parser('rollback', help='Rollback pack deployment')
+        rollback_parser.add_argument('pack', help='Pack name to rollback')
+        rollback_parser.add_argument('--target', '-t', help='Deployment target')
+        rollback_parser.add_argument('--to-version', help='Version to rollback to')
+        
+        # Uninstall command
+        uninstall_parser = subparsers.add_parser('uninstall', help='Uninstall deployed pack')
+        uninstall_parser.add_argument('pack', help='Pack name to uninstall')
+        uninstall_parser.add_argument('--target', '-t', help='Deployment target')
         
         # Init command
         init_parser = subparsers.add_parser('init', help='Initialize a pack development environment')
@@ -79,6 +119,16 @@ class CLI:
                 return self._install_pack(parsed_args)
             elif parsed_args.command == 'list':
                 return self._list_packs(parsed_args)
+            elif parsed_args.command == 'index':
+                return self._create_index(parsed_args)
+            elif parsed_args.command == 'deploy':
+                return self._deploy_pack(parsed_args)
+            elif parsed_args.command == 'status':
+                return self._show_status(parsed_args)
+            elif parsed_args.command == 'rollback':
+                return self._rollback_pack(parsed_args)
+            elif parsed_args.command == 'uninstall':
+                return self._uninstall_pack(parsed_args)
             elif parsed_args.command == 'init':
                 return self._init_project(parsed_args)
         except Exception as e:
@@ -91,34 +141,32 @@ class CLI:
         """Create a new pack."""
         print(f"Creating {args.type} pack: {args.name}")
         
-        if args.type == 'rest':
-            if not args.base_url:
-                print("Error: --base-url is required for REST API packs")
-                return 1
-            builder = PackFactory.create_rest_api_pack(
-                args.name, 
-                args.base_url,
-                args.description
+        try:
+            pack_dir = create_pack(
+                pack_name=args.name,
+                output_dir=args.output,
+                connection_type=args.type,
+                domain=args.domain,
+                vendor=args.vendor,
+                base_url=args.base_url,
+                description=args.description
             )
-        elif args.type == 'database':
-            builder = PackFactory.create_database_pack(args.name)
-        elif args.type == 'monitoring':
-            builder = PackFactory.create_monitoring_pack(args.name, args.name)
-        else:
-            builder = PackBuilder(args.name)
-        
-        if args.description:
-            builder.set_metadata(description=args.description)
-        
-        # Validate the pack
-        if not builder.validate():
-            print("Pack validation failed")
+            
+            print(f"Created pack '{args.name}' at: {pack_dir}")
+            print(f"  Connection type: {args.type}")
+            print(f"  Domain: {args.domain}")
+            print(f"  Vendor: {args.vendor}")
+            print("")
+            print("Next steps:")
+            print(f"1. Edit {pack_dir}/pack.yaml to configure your connection")
+            print(f"2. Add tools in {pack_dir}/tools/")
+            print(f"3. Add prompts in {pack_dir}/prompts/")
+            print(f"4. Test with: catalyst-packs validate {pack_dir}")
+            
+            return 0
+        except Exception as e:
+            print(f"Failed to create pack: {e}")
             return 1
-        
-        # Scaffold the pack
-        builder.scaffold(args.output)
-        print(f"✅ Pack '{args.name}' created successfully in {args.output}")
-        return 0
     
     def _validate_pack(self, args) -> int:
         """Validate pack(s)."""
@@ -315,11 +363,101 @@ This is a Catalyst pack for {name} integration.
         with open(project_dir / "README.md", "w") as f:
             f.write(readme_content)
         
-        print(f"✅ Project '{name}' initialized successfully")
-        print(f"📁 Created in: {project_dir.absolute()}")
+        print(f"Project '{name}' initialized successfully")
+        print(f"Created in: {project_dir.absolute()}")
         print(f"\nNext steps:")
         print(f"  cd {name}")
         print(f"  catalyst-packs validate {name}/pack.yaml")
+        
+        return 0
+    
+    def _list_packs(self, args) -> int:
+        """List discovered packs."""
+        try:
+            discovered = discover_packs(args.path)
+            
+            if args.stats:
+                stats = get_pack_statistics(args.path)
+                if args.format == 'json':
+                    print(json.dumps(stats, indent=2))
+                else:
+                    print(f"Pack Collection Statistics ({args.path})")
+                    print("=" * 50)
+                    print(f"Total packs: {stats['total_packs']}")
+                    print(f"Domains: {', '.join(stats['domains'].keys())}")
+                    print(f"Connection types: {', '.join(stats['connection_types'].keys())}")
+                    print(f"Vendors: {', '.join(stats['vendors'].keys())}")
+            else:
+                if args.format == 'json':
+                    print(json.dumps(discovered, indent=2))
+                else:
+                    if not discovered:
+                        print(f"No packs found in {args.path}")
+                        return 1
+                    
+                    print(f"Discovered Packs ({len(discovered)})")
+                    print("=" * 50)
+                    for pack in discovered:
+                        print(f"{pack['name']} (v{pack['version']})")
+                        print(f"   Domain: {pack['domain']}")
+                        print(f"   Vendor: {pack['vendor']}")
+                        print(f"   Type: {pack['connection_type']}")
+                        print(f"   Path: {pack['path']}")
+                        print()
+            
+            return 0
+        except Exception as e:
+            print(f"Error listing packs: {e}")
+            return 1
+    
+    def _create_index(self, args) -> int:
+        """Create pack index file."""
+        try:
+            create_pack_index(args.path, args.output)
+            print(f"Pack index created: {args.output}")
+            return 0
+        except Exception as e:
+            print(f"Error creating index: {e}")
+            return 1
+    
+    def _deploy_pack(self, args) -> int:
+        """Deploy pack to MCP server."""
+        print("WARNING: Deployment functionality is under development")
+        print("   This will integrate with MCP server deployment in a future release")
+        print(f"   Pack to deploy: {args.pack}")
+        print(f"   Target: {args.target or 'auto-detect'}")
+        print(f"   Mode: {args.mode}")
+        
+        # For now, just show what would be deployed
+        if args.dry_run:
+            print("Dry run - showing planned deployment:")
+        
+        return 0
+    
+    def _show_status(self, args) -> int:
+        """Show deployment status."""
+        print("WARNING: Status functionality is under development")
+        print("   This will show MCP server deployment status in a future release")
+        print(f"   Target: {args.target or 'all targets'}")
+        
+        return 0
+    
+    def _rollback_pack(self, args) -> int:
+        """Rollback pack deployment."""
+        print("WARNING: Rollback functionality is under development")
+        print("   This will rollback MCP server deployments in a future release")
+        print(f"   Pack: {args.pack}")
+        print(f"   Target: {args.target or 'auto-detect'}")
+        print(f"   To version: {args.to_version or 'previous'}")
+        
+        return 0
+    
+    def _uninstall_pack(self, args) -> int:
+        """Uninstall deployed pack."""
+        print("WARNING: Uninstall functionality is under development")
+        print("   This will uninstall from MCP servers in a future release")
+        print(f"   Pack: {args.pack}")
+        print(f"   Target: {args.target or 'auto-detect'}")
         
         return 0
 

@@ -1,6 +1,7 @@
 """Validation utilities for knowledge packs."""
 
 import yaml
+from pathlib import Path
 from typing import Dict, Any, List, Optional
 from .models import Pack, PackValidationError
 
@@ -216,3 +217,104 @@ def validate_pack_dict(pack_data: Dict[str, Any]) -> Dict[str, Any]:
             'error_count': 1,
             'warning_count': 0
         }
+
+
+class PackCollectionValidator:
+    """Validates collections of knowledge packs."""
+    
+    def __init__(self, base_dir: str = "."):
+        """Initialize collection validator.
+        
+        Args:
+            base_dir: Base directory containing packs
+        """
+        self.base_dir = base_dir
+        self.validator = PackValidator()
+    
+    def validate_all_packs(self) -> Dict[str, Dict[str, Any]]:
+        """Validate all packs in the collection.
+        
+        Returns:
+            Dictionary mapping pack names to validation results
+        """
+        from .utils import discover_packs  # Import here to avoid circular imports
+        
+        results = {}
+        discovered_packs = discover_packs(self.base_dir)
+        
+        for pack_info in discovered_packs:
+            pack_path = Path(pack_info['path'])
+            pack_yaml = pack_path / "pack.yaml"
+            
+            if pack_yaml.exists():
+                result = validate_pack_yaml(str(pack_yaml))
+                result['pack_info'] = pack_info
+                results[pack_info['name']] = result
+            else:
+                results[pack_info['name']] = {
+                    'valid': False,
+                    'errors': ['pack.yaml file not found'],
+                    'warnings': [],
+                    'error_count': 1,
+                    'warning_count': 0,
+                    'pack_info': pack_info
+                }
+        
+        return results
+    
+    def get_validation_summary(self) -> Dict[str, Any]:
+        """Get validation summary statistics.
+        
+        Returns:
+            Summary statistics dictionary
+        """
+        results = self.validate_all_packs()
+        
+        total_packs = len(results)
+        valid_packs = sum(1 for result in results.values() if result['valid'])
+        invalid_packs = total_packs - valid_packs
+        
+        total_errors = sum(result.get('error_count', 0) for result in results.values())
+        total_warnings = sum(result.get('warning_count', 0) for result in results.values())
+        
+        validation_rate = (valid_packs / total_packs * 100) if total_packs > 0 else 0
+        
+        return {
+            'total_packs': total_packs,
+            'valid_packs': valid_packs,
+            'invalid_packs': invalid_packs,
+            'validation_rate': f"{validation_rate:.1f}%",
+            'total_errors': total_errors,
+            'total_warnings': total_warnings,
+            'pack_names': list(results.keys())
+        }
+    
+    def print_validation_report(self) -> None:
+        """Print a detailed validation report."""
+        results = self.validate_all_packs()
+        summary = self.get_validation_summary()
+        
+        print("=== Pack Collection Validation Report ===")
+        print(f"Base Directory: {self.base_dir}")
+        print(f"Total Packs: {summary['total_packs']}")
+        print(f"Valid: {summary['valid_packs']}")
+        print(f"Invalid: {summary['invalid_packs']}")
+        print(f"Success Rate: {summary['validation_rate']}")
+        print(f"Total Errors: {summary['total_errors']}")
+        print(f"Total Warnings: {summary['total_warnings']}")
+        print("")
+        
+        # Print individual pack results
+        for pack_name, result in results.items():
+            status = "VALID" if result['valid'] else "INVALID"
+            print(f"{status} {pack_name}")
+            
+            if result.get('errors'):
+                for error in result['errors']:
+                    print(f"  Error: {error}")
+            
+            if result.get('warnings'):
+                for warning in result['warnings']:
+                    print(f"  Warning: {warning}")
+            
+            print()

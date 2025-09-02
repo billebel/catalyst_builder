@@ -1,0 +1,119 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches:
+      - main  # Only trigger on pushes to main branch
+  pull_request:
+    branches:
+      - main  # Run tests on PRs to main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest pytest-cov
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=catalyst_pack_schemas --cov-report=term-missing
+    
+    - name: Test import and basic functionality
+      run: |
+        python -c "
+        from catalyst_pack_schemas import PackValidator, create_pack, validate_pack_yaml
+        print('✓ Core imports successful')
+        
+        from catalyst_pack_schemas import PackCollectionValidator, MCPInstaller
+        print('✓ Enhanced functionality imports successful')
+        
+        # Test basic pack creation
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as tmp:
+            pack_path = create_pack(
+                pack_name='ci_test_pack',
+                output_dir=tmp,
+                connection_type='rest',
+                base_url='https://api.test.com',
+                domain='testing',
+                vendor='CI Test Co'
+            )
+            print('✓ Pack creation successful')
+            
+            # Test validation
+            result = validate_pack_yaml(str(pack_path / 'pack.yaml'))
+            assert result['valid'], f'Pack validation failed: {result[\"errors\"]}'
+            print('✓ Pack validation successful')
+        
+        print('All functionality tests passed!')
+        "
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+    
+    - name: Build distribution
+      run: |
+        python -m build
+    
+    - name: Check distribution
+      run: |
+        python -m twine check dist/*
+    
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        python -m twine upload dist/*
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release v${{ github.run_number }}
+        body: |
+          Automated release from main branch merge.
+          
+          ## Changes
+          - Enhanced public catalyst-builder package
+          - Comprehensive CLI functionality
+          - Full MCPInstaller with deployment interface
+          - PackCollectionValidator for multi-pack validation
+          - Complete test suite migration
+          - Backward compatibility with catalyst_packs
+          
+          This release includes all functionality migrated from the private catalyst_packs repository while maintaining API compatibility.
+        draft: false
+        prerelease: false

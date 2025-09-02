@@ -12,14 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         
@@ -27,7 +27,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .
-        pip install pytest black isort mypy
+        pip install pytest pytest-cov black isort mypy ruff
         
     - name: Code quality checks
       run: |
@@ -42,12 +42,16 @@ jobs:
         
     - name: Test package installation
       run: |
-        # Test basic imports
+        # Test all major imports including migrated functionality
         python -c "
         import catalyst_pack_schemas
-        from catalyst_pack_schemas import Pack, PackValidator, PackBuilder
+        from catalyst_pack_schemas import (
+            Pack, PackValidator, PackCollectionValidator,
+            PackBuilder, create_pack, validate_pack_yaml,
+            MCPInstaller, DeploymentOptions, PackInstaller
+        )
         from catalyst_pack_schemas.cli import main
-        print('✅ All imports successful')
+        print('✅ All imports successful including enhanced functionality')
         print(f'Package version: {catalyst_pack_schemas.__version__}')
         "
         
@@ -64,10 +68,19 @@ jobs:
         
         echo "✅ CLI tests passed"
         
-    - name: Run tests (if test directory exists)
+    - name: Run comprehensive test suite
       run: |
         if [ -d "tests" ]; then
-          pytest tests/ -v
+          # Run unit tests with coverage
+          pytest tests/unit/ -v --cov=catalyst_pack_schemas --cov-report=term-missing
+          
+          # Run integration tests
+          pytest tests/integration/ -v
+          
+          # Run E2E tests  
+          pytest tests/e2e/ -v
+          
+          echo "✅ All test suites passed"
         else
           echo "No tests directory found, skipping pytest"
         fi

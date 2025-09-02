@@ -27,6 +27,7 @@ from .models import (
 
 from .validators import (
     PackValidator,
+    PackCollectionValidator,
     validate_pack_yaml,
     validate_pack_dict,
 )
@@ -40,6 +41,7 @@ from .builder import (
 
 from .installer import (
     PackInstaller,
+    MCPInstaller,
     InstalledPack,
     PackRegistry,
     DeploymentTarget,
@@ -80,6 +82,7 @@ __all__ = [
     
     # Validators
     "PackValidator",
+    "PackCollectionValidator", 
     "validate_pack_yaml",
     "validate_pack_dict",
     
@@ -91,6 +94,7 @@ __all__ = [
     
     # Installer
     "PackInstaller",
+    "MCPInstaller",
     "InstalledPack", 
     "PackRegistry",
     "DeploymentTarget",
