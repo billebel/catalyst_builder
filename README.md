@@ -4,9 +4,11 @@
 
 Catalyst transforms complex enterprise integrations into simple, reusable "Knowledge Packs" that connect AI assistants directly to your business tools - databases, APIs, cloud services, and more.
 
-[![PyPI version](https://badge.fury.io/py/catalyst-pack-schemas.svg)](https://pypi.org/project/catalyst-pack-schemas/)
+[![PyPI version](https://badge.fury.io/py/catalyst-builder.svg)](https://pypi.org/project/catalyst-builder/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![MCP Server](https://img.shields.io/badge/MCP%20Server-catalyst_mcp-blue)](https://github.com/billebel/catalyst_mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Stars](https://img.shields.io/github/stars/billebel/catalyst_builder?style=social)](https://github.com/billebel/catalyst_builder)
 
 ## What is Catalyst?
 

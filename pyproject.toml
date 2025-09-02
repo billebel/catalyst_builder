@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "catalyst-pack-schemas"
+name = "catalyst-builder"
 version = "1.0.0"
-description = "Shared schemas and validation for Catalyst Knowledge Packs"
+description = "Build AI-powered integrations for any business system in minutes"
 readme = "README.md"
 authors = [
     {name = "Catalyst Team", email = "team@catalyst.dev"}
@@ -38,9 +38,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/catalyst-pack-schemas"
-Repository = "https://github.com/your-org/catalyst-pack-schemas"
-Issues = "https://github.com/your-org/catalyst-pack-schemas/issues"
+Homepage = "https://github.com/billebel/catalyst_builder"
+Repository = "https://github.com/billebel/catalyst_builder"
+Issues = "https://github.com/billebel/catalyst_builder/issues"
+Documentation = "https://github.com/billebel/catalyst_builder/blob/main/docs/GETTING_STARTED.md"
 
 [project.scripts]
 catalyst-packs = "catalyst_pack_schemas.cli:main"
