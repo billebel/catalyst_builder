@@ -154,3 +154,7 @@ temp/
 # Logs
 *.log
 logs/
+
+# Claude Code files
+CLAUDE.md
+PLAN.md

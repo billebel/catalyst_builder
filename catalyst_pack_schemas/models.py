@@ -34,6 +34,7 @@ class AuthMethod(Enum):
     SSH_KEY = "ssh_key"      # SSH key authentication
     CERT = "certificate"     # Certificate-based auth
     KERBEROS = "kerberos"    # Kerberos authentication
+    PASSTHROUGH = "passthrough"  # Forward user credentials
     CUSTOM = "custom"
 
 
