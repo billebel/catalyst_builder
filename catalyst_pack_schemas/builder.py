@@ -20,12 +20,16 @@ class PackBuilder:
                 "version": version,
                 "description": f"{name} integration pack",
                 "author": "Pack Author",
+                "license": "MIT",
+                "compatibility": "2.0.0",
+                "domain": "general",
+                "vendor": "Community",
                 "tags": [],
             },
             "connection": {},
-            "tools": [],
-            "prompts": [],
-            "resources": [],
+            "tools": {},
+            "prompts": {},
+            "resources": {},
         }
 
     def set_metadata(self, **kwargs) -> "PackBuilder":
