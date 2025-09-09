@@ -429,3 +429,81 @@ class Pack:
             structure=data.get("structure"),  # Parse modular structure references
             error_mapping=data.get("error_mapping", {}),
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert pack to dictionary."""
+        data = {}
+        
+        # Metadata
+        data["metadata"] = {
+            "name": self.metadata.name,
+            "version": self.metadata.version,
+            "description": self.metadata.description,
+            "vendor": self.metadata.vendor,
+            "license": self.metadata.license,
+            "compatibility": self.metadata.compatibility,
+            "domain": self.metadata.domain,
+            "tags": self.metadata.tags,
+            "pricing_tier": self.metadata.pricing_tier,
+            "required_capabilities": self.metadata.required_capabilities,
+        }
+        
+        # Connection
+        conn_data = {"type": self.connection.type}
+        if self.connection.base_url:
+            conn_data["base_url"] = self.connection.base_url
+        if self.connection.auth:
+            conn_data["auth"] = {
+                "method": self.connection.auth.method.value,
+                "config": self.connection.auth.config,
+            }
+        data["connection"] = conn_data
+        
+        # Tools
+        if self.tools:
+            tools_data = {}
+            for name, tool in self.tools.items():
+                tool_data = {
+                    "type": tool.type.value,
+                    "description": tool.description,
+                }
+                if tool.endpoint:
+                    tool_data["endpoint"] = tool.endpoint
+                if tool.method != "GET":
+                    tool_data["method"] = tool.method
+                tools_data[name] = tool_data
+            data["tools"] = tools_data
+        
+        # Prompts
+        if self.prompts:
+            prompts_data = {}
+            for name, prompt in self.prompts.items():
+                prompt_data = {
+                    "description": prompt.description,
+                    "template": prompt.template,
+                }
+                if prompt.suggested_tools:
+                    prompt_data["suggested_tools"] = prompt.suggested_tools
+                if prompt.arguments:
+                    prompt_data["arguments"] = [
+                        {
+                            "name": arg.name,
+                            "type": arg.type,
+                            "required": arg.required,
+                            "description": arg.description,
+                        }
+                        for arg in prompt.arguments
+                    ]
+                prompts_data[name] = prompt_data
+            data["prompts"] = prompts_data
+        
+        return data
+
+    def to_yaml_string(self) -> str:
+        """Convert pack to YAML string."""
+        return yaml.dump(self.to_dict(), default_flow_style=False, sort_keys=False)
+
+    def save_to_file(self, file_path: str) -> None:
+        """Save pack to YAML file."""
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(self.to_yaml_string())

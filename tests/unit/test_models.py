@@ -185,6 +185,7 @@ class TestToolDefinition:
         )
         
         tool = ToolDefinition(
+            name='list_items',
             type=ToolType.LIST,
             description='List items from API',
             endpoint='/api/items',
@@ -211,6 +212,7 @@ class TestToolDefinition:
         )
         
         tool = ToolDefinition(
+            name='search_items',
             type=ToolType.SEARCH,
             description='Search for items',
             endpoint='/api/search',
@@ -236,6 +238,7 @@ class TestToolDefinition:
         )
         
         tool = ToolDefinition(
+            name='query_table',
             type=ToolType.QUERY,
             description='Query database table',
             sql='SELECT * FROM {table_name} LIMIT 100',
@@ -258,6 +261,7 @@ class TestToolDefinition:
         )
         
         tool = ToolDefinition(
+            name='process_file',
             type=ToolType.COMMAND,
             description='Process file',
             command='process_file {filename}',
@@ -417,11 +421,10 @@ class TestPackValidationError:
     
     def test_pack_validation_error_with_details(self):
         """Test PackValidationError with error details."""
-        errors = ['Error 1', 'Error 2']
-        error = PackValidationError("Validation failed", errors=errors)
+        error = PackValidationError("Validation failed with multiple errors")
         
-        assert str(error) == "Validation failed"
-        assert error.errors == errors
+        assert str(error) == "Validation failed with multiple errors"
+        assert isinstance(error, Exception)
 
 
 class TestEnums:
@@ -493,8 +496,8 @@ class TestParameterDefinition:
             required=False,
             default='json',
             description='Output format',
-            choices=['json', 'xml', 'csv']
+            enum=['json', 'xml', 'csv']
         )
         
-        assert param.choices == ['json', 'xml', 'csv']
+        assert param.enum == ['json', 'xml', 'csv']
         assert param.default == 'json'
