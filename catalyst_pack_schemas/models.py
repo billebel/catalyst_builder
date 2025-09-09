@@ -1,8 +1,9 @@
 """Data models for universal knowledge packs."""
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Union
 from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+
 import yaml
 
 

@@ -1,17 +1,18 @@
 """Command-line interface for Catalyst Pack Schemas toolkit."""
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import List, Optional
-import yaml
-import json
 
-from .models import Pack
-from .validators import PackValidator
+import yaml
+
 from .builder import PackBuilder, PackFactory, create_pack
-from .installer import PackInstaller, DeploymentOptions, DeploymentTarget
-from .utils import discover_packs, get_pack_statistics, create_pack_index, validate_pack_structure
+from .installer import DeploymentOptions, DeploymentTarget, PackInstaller
+from .models import Pack
+from .utils import create_pack_index, discover_packs, get_pack_statistics, validate_pack_structure
+from .validators import PackValidator
 
 
 class CLI:

@@ -2,13 +2,15 @@
 Collection management utilities for discovering and managing groups of packs.
 """
 
-import os
 import json
+import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
+import yaml
+
 from .models import Pack
 from .validators import validate_pack_yaml
-import yaml
 
 
 def discover_packs(base_dir: str = ".") -> List[Dict[str, Any]]:

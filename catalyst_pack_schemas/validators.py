@@ -1,8 +1,10 @@
 """Validation utilities for knowledge packs."""
 
-import yaml
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
+import yaml
+
 from .models import Pack, PackValidationError
 
 
