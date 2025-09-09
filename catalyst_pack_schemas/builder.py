@@ -43,9 +43,14 @@ class PackBuilder:
         self._pack_dict["metadata"].update(kwargs)
         return self
 
-    def set_connection(self, connection_type: str, **kwargs) -> "PackBuilder":
+    def set_connection(self, type: str = None, connection_type: str = None, **kwargs) -> "PackBuilder":
         """Configure connection settings."""
-        self._pack_dict["connection"] = {"type": connection_type, **kwargs}
+        # Support both 'type' and 'connection_type' parameters for backwards compatibility
+        conn_type = type or connection_type
+        if not conn_type:
+            raise ValueError("Either 'type' or 'connection_type' must be specified")
+        
+        self._pack_dict["connection"] = {"type": conn_type, **kwargs}
         return self
     
     def set_auth(self, method: str, **kwargs) -> "PackBuilder":
@@ -71,24 +76,31 @@ class PackBuilder:
 
     def add_tool(self, name: str, tool_type: str, description: str, **kwargs) -> "PackBuilder":
         """Add a tool to the pack."""
-        tool = {"name": name, "type": tool_type, "description": description, **kwargs}
-        self._pack_dict["tools"].append(tool)
+        tool = {"type": tool_type, "description": description, **kwargs}
+        self._pack_dict["tools"][name] = tool
         return self
 
-    def add_prompt(self, name: str, template: str, description: str = "") -> "PackBuilder":
+    def add_prompt(self, prompt_key: str, **kwargs) -> "PackBuilder":
         """Add a prompt template."""
+        # Extract required fields, set defaults
         prompt = {
-            "name": name,
-            "description": description or f"Prompt for {name}",
-            "template": template,
+            "name": kwargs.get("name", prompt_key),
+            "description": kwargs.get("description", f"Prompt for {prompt_key}"),
+            "template": kwargs.get("template", ""),
+            **{k: v for k, v in kwargs.items() if k not in ["name", "description", "template"]}
         }
-        self._pack_dict["prompts"].append(prompt)
+        self._pack_dict["prompts"][prompt_key] = prompt
         return self
 
-    def add_resource(self, name: str, resource_type: str, **kwargs) -> "PackBuilder":
+    def add_resource(self, resource_key: str, **kwargs) -> "PackBuilder":
         """Add a resource definition."""
-        resource = {"name": name, "type": resource_type, **kwargs}
-        self._pack_dict["resources"].append(resource)
+        # Extract required fields
+        resource = {
+            "name": kwargs.get("name", resource_key),
+            "type": kwargs.get("type", "documentation"),
+            **{k: v for k, v in kwargs.items() if k not in ["name", "type"]}
+        }
+        self._pack_dict["resources"][resource_key] = resource
         return self
 
     def validate(self) -> bool:
@@ -99,15 +111,20 @@ class PackBuilder:
             print(f"Validation errors: {result.errors}")
         return result.is_valid
 
-    def build(self) -> Dict[str, Any]:
-        """Build and return the pack dictionary."""
-        return self._pack_dict
+    def build(self):
+        """Build and return the pack object."""
+        return self.pack
 
-    def save(self, filepath: str) -> None:
-        """Save the pack to a YAML file."""
-        with open(filepath, "w") as f:
+    def save(self, output_dir: str) -> Path:
+        """Save the pack to a YAML file and return the pack directory."""
+        pack_dir = Path(output_dir) / self.name
+        pack_dir.mkdir(parents=True, exist_ok=True)
+        
+        pack_file = pack_dir / "pack.yaml"
+        with open(pack_file, "w") as f:
             yaml.dump(self._pack_dict, f, default_flow_style=False, sort_keys=False)
-        print(f"Pack saved to {filepath}")
+        print(f"Pack saved to {pack_file}")
+        return pack_dir
 
     def scaffold(self, output_dir: str) -> Path:
         """Create a complete pack directory structure."""
@@ -116,7 +133,8 @@ class PackBuilder:
 
         # Create pack.yaml
         pack_file = pack_dir / "pack.yaml"
-        self.save(str(pack_file))
+        with open(pack_file, "w") as f:
+            yaml.dump(self._pack_dict, f, default_flow_style=False, sort_keys=False)
 
         # Create modular structure based on connection type
         self._create_modular_structure(pack_dir)
@@ -124,12 +142,15 @@ class PackBuilder:
         # Create README
         self._create_readme(pack_dir)
 
+        # Create .env file
+        self._create_env_file(pack_dir)
+
         print(f"Pack scaffolded in {pack_dir}")
         return pack_dir
 
     def _create_modular_structure(self, pack_dir: Path) -> None:
         """Create modular directory structure with example files."""
-        connection_type = self.pack.get("connection", {}).get("type", "rest")
+        connection_type = self._pack_dict.get("connection", {}).get("type", "rest")
 
         # Create tools directory with examples
         tools_dir = pack_dir / "tools"
@@ -279,7 +300,7 @@ def format_output(data):
         """Create comprehensive README file."""
         readme_content = f"""# {self.name}
 
-{self.pack['metadata'].get('description', f'{self.name} integration pack')}
+{self._pack_dict['metadata'].get('description', f'{self.name} integration pack')}
 
 ## Overview
 
@@ -288,10 +309,10 @@ This pack provides integration capabilities for {self.name} systems through the 
 ### Pack Information
 
 - **Name:** {self.name}
-- **Version:** {self.pack['metadata'].get('version', '1.0.0')}
-- **Domain:** {self.pack['metadata'].get('domain', 'general')}
-- **Vendor:** {self.pack['metadata'].get('vendor', 'Community')}
-- **Connection Type:** {self.pack.get('connection', {}).get('type', 'unknown')}
+- **Version:** {self._pack_dict['metadata'].get('version', '1.0.0')}
+- **Domain:** {self._pack_dict['metadata'].get('domain', 'general')}
+- **Vendor:** {self._pack_dict['metadata'].get('vendor', 'Community')}
+- **Connection Type:** {self._pack_dict.get('connection', {}).get('type', 'unknown')}"
 
 ## Configuration
 
@@ -301,7 +322,7 @@ Set the following environment variables for this pack:
 
 """
 
-        connection = self.pack.get("connection", {})
+        connection = self._pack_dict.get("connection", {})
         if connection.get("type") == "rest":
             readme_content += """- `API_BASE_URL` - Base URL for the API
 - `API_TOKEN` - Authentication token
@@ -390,6 +411,37 @@ Generated by catalyst-builder v1.0.0
         with open(pack_dir / "README.md", "w", encoding="utf-8") as f:
             f.write(readme_content)
 
+    def _create_env_file(self, pack_dir: Path) -> None:
+        """Create .env file with environment variable templates."""
+        connection = self._pack_dict.get("connection", {})
+        connection_type = connection.get("type", "rest")
+        
+        env_content = f"# Environment variables for {self.name}\n"
+        env_content += "# Copy this file to .env and fill in your actual values\n\n"
+        
+        if connection_type == "rest":
+            env_content += "# REST API Configuration\n"
+            env_content += "API_BASE_URL=https://your-api-domain.com\n"
+            env_content += "API_TOKEN=your_api_token_here\n"
+        elif connection_type == "database":
+            env_content += "# Database Configuration\n"
+            env_content += "DB_HOST=localhost\n"
+            env_content += "DB_PORT=5432\n"
+            env_content += "DB_NAME=your_database\n"
+            env_content += "DB_USER=your_username\n"
+            env_content += "DB_PASSWORD=your_password\n"
+        elif connection_type == "ssh":
+            env_content += "# SSH Configuration\n"
+            env_content += "SSH_HOST=your-server.com\n"
+            env_content += "SSH_USER=your_username\n"
+            env_content += "SSH_KEY_PATH=~/.ssh/id_rsa\n"
+        
+        env_content += f"\n# Pack: {self.name}\n"
+        env_content += f"# Generated by catalyst-builder\n"
+        
+        with open(pack_dir / ".env", "w", encoding="utf-8") as f:
+            f.write(env_content)
+
     def create_pack(
         self,
         pack_name: str,
@@ -414,13 +466,26 @@ Generated by catalyst-builder v1.0.0
         )
 
         # Configure connection
+        valid_connection_types = ["rest", "database", "ssh", "filesystem", "message_queue"]
+        
         if connection_type == "rest":
-            builder.set_connection(
-                connection_type="rest",
-                base_url=base_url or "${API_BASE_URL}",
-                auth={"method": "bearer", "token": "${API_TOKEN}"},
-                timeout=30,
-            )
+            conn_config = {
+                "connection_type": "rest",
+                "base_url": base_url or "${API_BASE_URL}",
+                "timeout": 30,
+            }
+            # Add auth if provided
+            if "auth_method" in kwargs:
+                auth_config = {"method": kwargs["auth_method"]}
+                if "auth_token" in kwargs:
+                    auth_config["token"] = kwargs["auth_token"]
+                else:
+                    auth_config["token"] = "${API_TOKEN}"
+                conn_config["auth"] = auth_config
+            else:
+                conn_config["auth"] = {"method": "bearer", "token": "${API_TOKEN}"}
+            
+            builder.set_connection(**conn_config)
         elif connection_type == "database":
             builder.set_connection(
                 connection_type="database",
@@ -433,12 +498,14 @@ Generated by catalyst-builder v1.0.0
         elif connection_type == "ssh":
             builder.set_connection(
                 connection_type="ssh",
-                hostname="${SSH_HOST}",
-                username="${SSH_USER}",
+                hostname=kwargs.get("hostname", "${SSH_HOST}"),
+                username=kwargs.get("username", "${SSH_USER}"),
                 auth={"method": "ssh_key", "key_path": "${SSH_KEY_PATH}"},
             )
-        else:
+        elif connection_type in valid_connection_types:
             builder.set_connection(connection_type=connection_type, **kwargs)
+        else:
+            raise ValueError(f"Unsupported connection type: {connection_type}. Valid types: {valid_connection_types}")
 
         # Create the pack directory structure
         return builder.scaffold(output_dir)
@@ -474,35 +541,58 @@ class PackFactory:
         return builder
 
     @staticmethod
-    def create_database_pack(name: str, engine: str = "postgresql") -> PackBuilder:
+    def create_database_pack(name: str, engine: str = "postgresql", **kwargs):
         """Create a database integration pack."""
         builder = PackBuilder(name)
         builder.set_metadata(
-            description=f"Database integration for {name}", tags=["database", engine, "sql"]
+            description=f"Database integration for {name}",
+            vendor=kwargs.get("vendor", "Community"),
+            domain=kwargs.get("domain", "data"),
+            tags=["database", engine, "sql"]
         )
         builder.set_connection(
-            connection_type="database",
+            type="database",
             engine=engine,
-            host="${DB_HOST}",
-            port="${DB_PORT}",
-            database="${DB_NAME}",
+            host=kwargs.get("host", "${DB_HOST}"),
+            port=kwargs.get("port", "${DB_PORT}"),
+            database=kwargs.get("database", "${DB_NAME}"),
         )
 
-        # Add common database tools
-        builder.add_tool(
-            name="execute_query",
-            tool_type="query",
-            description="Execute SQL query",
-            query_template="SELECT * FROM {table} LIMIT 100",
-        )
-        builder.add_tool(
-            name="list_tables",
-            tool_type="list",
-            description="List database tables",
-            query_template="SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
-        )
+        return builder.pack
 
-        return builder
+    @staticmethod
+    def create_rest_pack(name: str, base_url: str, description: str = "", **kwargs):
+        """Create a REST API integration pack."""
+        builder = PackBuilder(name)
+        builder.set_metadata(
+            description=description or f"REST API integration for {name}",
+            vendor=kwargs.get("vendor", "Community"),
+            domain=kwargs.get("domain", "api"),
+            tags=["rest", "api", "integration"],
+        )
+        builder.set_connection(type="rest", base_url=base_url)
+        
+        # Add auth if provided
+        if "auth_method" in kwargs:
+            auth_config = {"method": kwargs["auth_method"]}
+            if "auth_token" in kwargs:
+                auth_config["token"] = kwargs["auth_token"]
+            builder.set_auth(**auth_config)
+        
+        return builder.pack
+
+    @staticmethod
+    def create_ssh_pack(name: str, hostname: str, username: str, description: str = "", **kwargs):
+        """Create an SSH integration pack."""
+        builder = PackBuilder(name)
+        builder.set_metadata(
+            description=description or f"SSH integration for {name}",
+            vendor=kwargs.get("vendor", "Community"),
+            domain=kwargs.get("domain", "infrastructure"),
+            tags=["ssh", "infrastructure", "remote"],
+        )
+        builder.set_connection(type="ssh", hostname=hostname, username=username)
+        return builder.pack
 
     @staticmethod
     def create_monitoring_pack(name: str, system: str) -> PackBuilder:
@@ -536,16 +626,44 @@ class PackFactory:
         return builder
 
 
-def quick_pack(name: str, pack_type: str = "rest", **kwargs) -> PackBuilder:
-    """Quick helper to create common pack types."""
-    if pack_type == "rest":
-        return PackFactory.create_rest_api_pack(name, **kwargs)
-    elif pack_type == "database":
-        return PackFactory.create_database_pack(name, **kwargs)
-    elif pack_type == "monitoring":
-        return PackFactory.create_monitoring_pack(name, **kwargs)
+def quick_pack(name: str, connection_type: str = "rest", output_dir: str = None, **kwargs) -> Path:
+    """Quick helper to create common pack types and save them."""
+    if not output_dir:
+        raise ValueError("output_dir is required for quick_pack")
+        
+    builder = PackBuilder(name)
+    
+    if connection_type == "rest":
+        builder.set_metadata(
+            description=kwargs.get("description", f"REST API integration for {name}"),
+            vendor=kwargs.get("vendor", "Community"),
+            domain=kwargs.get("domain", "api"),
+            tags=["rest", "api", "integration"],
+        )
+        builder.set_connection(type="rest", base_url=kwargs.get("base_url", "${API_BASE_URL}"))
+    elif connection_type == "database":
+        builder.set_metadata(
+            description=kwargs.get("description", f"Database integration for {name}"),
+            vendor=kwargs.get("vendor", "Community"),
+            domain=kwargs.get("domain", "data"),
+            tags=["database", kwargs.get("engine", "postgresql"), "sql"]
+        )
+        builder.set_connection(
+            type="database",
+            engine=kwargs.get("engine", "postgresql"),
+            host=kwargs.get("host", "${DB_HOST}"),
+            port=kwargs.get("port", "${DB_PORT}"),
+            database=kwargs.get("database", "${DB_NAME}"),
+        )
     else:
-        return PackBuilder(name)
+        builder.set_metadata(
+            description=kwargs.get("description", f"{name} integration pack"),
+            vendor=kwargs.get("vendor", "Community"),
+            domain=kwargs.get("domain", "general"),
+        )
+        builder.set_connection(type=connection_type, **kwargs)
+    
+    return builder.save(output_dir)
 
 
 def create_pack(

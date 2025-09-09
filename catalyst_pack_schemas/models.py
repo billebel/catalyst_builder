@@ -401,7 +401,7 @@ class Pack:
                 arguments.append(arg)
 
             prompt = PromptDefinition(
-                name=prompt_name,
+                name=prompt_dict.get("name", prompt_name),
                 description=prompt_dict["description"],
                 template=prompt_dict["template"],
                 suggested_tools=prompt_dict.get("suggested_tools", []),
@@ -413,7 +413,7 @@ class Pack:
         resources = {}
         for resource_name, resource_dict in data.get("resources", {}).items():
             resource = ResourceDefinition(
-                name=resource_name,
+                name=resource_dict.get("name", resource_name),
                 type=resource_dict["type"],
                 url=resource_dict["url"],
                 description=resource_dict["description"],

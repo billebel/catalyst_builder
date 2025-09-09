@@ -354,7 +354,7 @@ class TestPackFactory:
         
         assert pack.connection.auth is not None
         assert pack.connection.auth.method == AuthMethod.BEARER
-        assert pack.connection.auth.token == '${API_TOKEN}'
+        assert pack.connection.auth.config['token'] == '${API_TOKEN}'
 
 
 class TestQuickPack:

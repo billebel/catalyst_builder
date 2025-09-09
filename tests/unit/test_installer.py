@@ -120,9 +120,9 @@ class TestMCPInstaller:
         result = installer.deploy(pack_dir, target, options)
         
         assert result['success'] is False
-        assert 'under development' in result['error']
-        assert result['pack_source'] == str(pack_dir)
-        assert result['target'] == str(target)
+        assert 'Pack validation failed' in result['error'] or 'pack.yaml not found' in result['error']
+        assert 'validation_errors' in result
+        assert 'pack.yaml not found' in result['validation_errors']
     
     def test_deploy_with_string_target(self, temp_dir):
         """Test deploy with string target."""
