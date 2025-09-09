@@ -17,7 +17,7 @@ class TestPackBuilder:
         builder = PackBuilder('test_pack')
         
         assert builder.name == 'test_pack'
-        assert builder.pack['metadata']['name'] == 'test_pack'
+        assert builder.pack.metadata.name == 'test_pack'
     
     def test_set_metadata(self):
         """Test setting pack metadata."""
@@ -79,7 +79,7 @@ class TestPackBuilder:
         )
         
         assert builder.pack.connection.auth.method == AuthMethod.BEARER
-        assert builder.pack.connection.auth.token == '${API_TOKEN}'
+        assert builder.pack.connection.auth.config['token'] == '${API_TOKEN}'
     
     def test_set_auth_basic(self):
         """Test setting Basic authentication."""
@@ -92,8 +92,8 @@ class TestPackBuilder:
         )
         
         assert builder.pack.connection.auth.method == AuthMethod.BASIC
-        assert builder.pack.connection.auth.username == '${DB_USER}'
-        assert builder.pack.connection.auth.password == '${DB_PASSWORD}'
+        assert builder.pack.connection.auth.config['username'] == '${DB_USER}'
+        assert builder.pack.connection.auth.config['password'] == '${DB_PASSWORD}'
     
     def test_add_list_tool(self):
         """Test adding a list tool."""

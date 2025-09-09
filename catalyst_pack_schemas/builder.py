@@ -14,7 +14,7 @@ class PackBuilder:
     def __init__(self, name: str, version: str = "1.0.0"):
         self.name = name
         self.version = version
-        self.pack = {
+        self._pack_dict = {
             "metadata": {
                 "name": name,
                 "version": version,
@@ -26,20 +26,37 @@ class PackBuilder:
                 "vendor": "Community",
                 "tags": [],
             },
-            "connection": {},
+            "connection": {"type": "rest"},
             "tools": {},
             "prompts": {},
             "resources": {},
         }
 
+    @property
+    def pack(self):
+        """Get Pack object from current state."""
+        from .models import Pack
+        return Pack.from_dict(self._pack_dict)
+
     def set_metadata(self, **kwargs) -> "PackBuilder":
         """Set metadata fields."""
-        self.pack["metadata"].update(kwargs)
+        self._pack_dict["metadata"].update(kwargs)
         return self
 
     def set_connection(self, connection_type: str, **kwargs) -> "PackBuilder":
         """Configure connection settings."""
-        self.pack["connection"] = {"type": connection_type, **kwargs}
+        self._pack_dict["connection"] = {"type": connection_type, **kwargs}
+        return self
+    
+    def set_auth(self, method: str, **kwargs) -> "PackBuilder":
+        """Set authentication configuration."""
+        if "connection" not in self._pack_dict:
+            self._pack_dict["connection"] = {}
+        
+        self._pack_dict["connection"]["auth"] = {
+            "method": method,
+            "config": kwargs
+        }
         return self
 
     def add_rest_connection(
@@ -49,13 +66,13 @@ class PackBuilder:
         connection = {"type": "rest", "base_url": base_url}
         if auth_method:
             connection["auth"] = {"method": auth_method}
-        self.pack["connection"] = connection
+        self._pack_dict["connection"] = connection
         return self
 
     def add_tool(self, name: str, tool_type: str, description: str, **kwargs) -> "PackBuilder":
         """Add a tool to the pack."""
         tool = {"name": name, "type": tool_type, "description": description, **kwargs}
-        self.pack["tools"].append(tool)
+        self._pack_dict["tools"].append(tool)
         return self
 
     def add_prompt(self, name: str, template: str, description: str = "") -> "PackBuilder":
@@ -65,13 +82,13 @@ class PackBuilder:
             "description": description or f"Prompt for {name}",
             "template": template,
         }
-        self.pack["prompts"].append(prompt)
+        self._pack_dict["prompts"].append(prompt)
         return self
 
     def add_resource(self, name: str, resource_type: str, **kwargs) -> "PackBuilder":
         """Add a resource definition."""
         resource = {"name": name, "type": resource_type, **kwargs}
-        self.pack["resources"].append(resource)
+        self._pack_dict["resources"].append(resource)
         return self
 
     def validate(self) -> bool:
@@ -84,12 +101,12 @@ class PackBuilder:
 
     def build(self) -> Dict[str, Any]:
         """Build and return the pack dictionary."""
-        return self.pack
+        return self._pack_dict
 
     def save(self, filepath: str) -> None:
         """Save the pack to a YAML file."""
         with open(filepath, "w") as f:
-            yaml.dump(self.pack, f, default_flow_style=False, sort_keys=False)
+            yaml.dump(self._pack_dict, f, default_flow_style=False, sort_keys=False)
         print(f"Pack saved to {filepath}")
 
     def scaffold(self, output_dir: str) -> Path:

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python -m pytest tests/unit/test_models.py::TestParameterDefinition::test_parameter_with_choices -v)",
-      "Bash(python -m pytest tests/e2e/test_cli.py::TestCLICommands::test_cli_help -v)"
+      "Bash(python -m pytest tests/e2e/test_cli.py::TestCLICommands::test_cli_help -v)",
+      "Bash(python -m pytest tests/unit/test_builder.py::TestPackBuilder::test_set_auth_bearer -v)"
     ],
     "deny": [],
     "ask": []
