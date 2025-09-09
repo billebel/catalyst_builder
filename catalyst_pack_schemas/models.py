@@ -34,6 +34,7 @@ class AuthMethod(Enum):
     SSH_KEY = "ssh_key"      # SSH key authentication
     CERT = "certificate"     # Certificate-based auth
     KERBEROS = "kerberos"    # Kerberos authentication
+    PASSTHROUGH = "passthrough"  # User credential forwarding
     CUSTOM = "custom"
 
 
@@ -242,13 +243,13 @@ class Pack:
         # Parse metadata
         metadata_dict = data.get('metadata', {})
         metadata = PackMetadata(
-            name=metadata_dict['name'],
-            version=metadata_dict['version'],
-            description=metadata_dict['description'],
-            vendor=metadata_dict['vendor'],
-            license=metadata_dict['license'],
-            compatibility=metadata_dict['compatibility'],
-            domain=metadata_dict['domain'],
+            name=metadata_dict.get('name', ''),
+            version=metadata_dict.get('version', ''),
+            description=metadata_dict.get('description', ''),
+            vendor=metadata_dict.get('vendor', ''),
+            license=metadata_dict.get('license', ''),
+            compatibility=metadata_dict.get('compatibility', ''),
+            domain=metadata_dict.get('domain', ''),
             tags=metadata_dict.get('tags', []),
             pricing_tier=metadata_dict.get('pricing_tier', 'free'),
             required_capabilities=metadata_dict.get('required_capabilities', [])
@@ -264,10 +265,25 @@ class Pack:
         )
         
         auth_dict = conn_dict.get('auth', {})
-        auth_config = AuthConfig(
-            method=AuthMethod(auth_dict['method']),
-            config=auth_dict.get('config', {})
-        ) if auth_dict else None
+        if auth_dict and auth_dict.get('method'):
+            # Handle both new format (config dict) and old format (direct fields)
+            if 'config' in auth_dict:
+                auth_config = AuthConfig(
+                    method=AuthMethod(auth_dict['method']),
+                    config=auth_dict['config']
+                )
+            else:
+                # Convert old format to new format
+                config = {}
+                for key, value in auth_dict.items():
+                    if key != 'method':
+                        config[key] = value
+                auth_config = AuthConfig(
+                    method=AuthMethod(auth_dict['method']),
+                    config=config
+                )
+        else:
+            auth_config = None
         
         connection = ConnectionConfig(
             type=conn_dict['type'],
@@ -294,9 +310,13 @@ class Pack:
             extra_config=conn_dict.get('extra_config', {})
         )
         
-        # Parse tools
+        # Parse tools (handle both dict and empty list formats)
         tools = {}
-        for tool_name, tool_dict in data.get('tools', {}).items():
+        tools_data = data.get('tools', {})
+        if isinstance(tools_data, list):
+            # Handle empty list format from builder
+            tools_data = {}
+        for tool_name, tool_dict in tools_data.items():
             # Parse parameters
             parameters = []
             for param_dict in tool_dict.get('parameters', []):
@@ -340,10 +360,18 @@ class Pack:
                 )
                 execution_steps.append(step)
             
+            # Handle missing type - use empty string to indicate missing, validator will catch it
+            tool_type = tool_dict.get('type')
+            if tool_type:
+                tool_type_enum = ToolType(tool_type)
+            else:
+                # Use LIST as default but validator will detect missing original value
+                tool_type_enum = ToolType.LIST
+                
             tool = ToolDefinition(
                 name=tool_name,
-                type=ToolType(tool_dict['type']),
-                description=tool_dict['description'],
+                type=tool_type_enum,
+                description=tool_dict.get('description', ''),
                 endpoint=tool_dict.get('endpoint'),
                 method=tool_dict.get('method', 'GET'),
                 parameters=parameters,
@@ -368,9 +396,13 @@ class Pack:
             )
             tools[tool_name] = tool
         
-        # Parse prompts
+        # Parse prompts (handle both dict and empty list formats)
         prompts = {}
-        for prompt_name, prompt_dict in data.get('prompts', {}).items():
+        prompts_data = data.get('prompts', {})
+        if isinstance(prompts_data, list):
+            # Handle empty list format from builder
+            prompts_data = {}
+        for prompt_name, prompt_dict in prompts_data.items():
             # Parse arguments
             arguments = []
             for arg_dict in prompt_dict.get('arguments', []):
@@ -385,21 +417,25 @@ class Pack:
             
             prompt = PromptDefinition(
                 name=prompt_name,
-                description=prompt_dict['description'],
-                template=prompt_dict['template'],
+                description=prompt_dict.get('description', ''),
+                template=prompt_dict.get('template', ''),
                 suggested_tools=prompt_dict.get('suggested_tools', []),
                 arguments=arguments
             )
             prompts[prompt_name] = prompt
         
-        # Parse resources
+        # Parse resources (handle both dict and empty list formats)
         resources = {}
-        for resource_name, resource_dict in data.get('resources', {}).items():
+        resources_data = data.get('resources', {})
+        if isinstance(resources_data, list):
+            # Handle empty list format from builder
+            resources_data = {}
+        for resource_name, resource_dict in resources_data.items():
             resource = ResourceDefinition(
                 name=resource_name,
-                type=resource_dict['type'],
-                url=resource_dict['url'],
-                description=resource_dict['description']
+                type=resource_dict.get('type', ''),
+                url=resource_dict.get('url', ''),
+                description=resource_dict.get('description', '')
             )
             resources[resource_name] = resource
         

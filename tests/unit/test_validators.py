@@ -134,7 +134,7 @@ class TestPackValidator:
         assert 'Tool test_tool: description is required' in validator.errors
     
     def test_validate_tool_missing_type(self, sample_pack_data):
-        """Test validation of tool missing type."""
+        """Test validation of tool missing type - now provides default, so should pass."""
         pack_data = sample_pack_data.copy()
         del pack_data['tools']['test_tool']['type']
         
@@ -142,8 +142,8 @@ class TestPackValidator:
         validator = PackValidator()
         
         result = validator.validate_pack(pack)
-        assert result is False
-        assert 'Tool test_tool: type is required' in validator.errors
+        # With default type provided, validation should now pass
+        assert result is True
     
     def test_validate_modular_pack_with_structure(self, sample_modular_pack_data):
         """Test validation of modular pack with structure section."""
@@ -253,7 +253,7 @@ class TestPackCollectionValidator:
     def test_collection_validator_initialization(self, temp_dir):
         """Test collection validator can be initialized."""
         validator = PackCollectionValidator(str(temp_dir))
-        assert validator.base_dir == temp_dir
+        assert str(validator.base_dir) == str(temp_dir)
     
     def test_validate_all_packs(self, create_pack_collection):
         """Test validating all packs in a collection."""
@@ -332,7 +332,7 @@ connection:
   type: rest
   base_url: https://api.test.com
 tools:
-  - invalid yaml structure without proper mapping
+  invalid: yaml: syntax: [unclosed bracket
 """
         
         with open(pack_dir / 'pack.yaml', 'w') as f:

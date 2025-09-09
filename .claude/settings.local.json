@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/unit/test_builder.py --tb=no -q)",
+      "Bash(python -m pytest tests/unit/test_builder.py::TestPackBuilder::test_add_list_tool -v)",
+      "Bash(python -m pytest tests/unit/test_builder.py::TestPackBuilder::test_add_list_tool tests/unit/test_builder.py::TestPackBuilder::test_add_search_tool tests/unit/test_builder.py::TestPackBuilder::test_add_query_tool tests/unit/test_builder.py::TestPackBuilder::test_add_command_tool -v)",
+      "Bash(python -m pytest tests/unit/test_builder.py::TestPackBuilder::test_add_prompt -v --tb=short)",
+      "Bash(python:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

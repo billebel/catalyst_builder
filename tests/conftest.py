@@ -43,7 +43,7 @@ def sample_pack_data() -> Dict[str, Any]:
             'timeout': 30,
             'auth': {
                 'method': 'bearer',
-                'token': '${API_TOKEN}'
+                'config': {'token': '${API_TOKEN}'}
             }
         },
         'tools': {
@@ -91,6 +91,7 @@ def sample_modular_pack_data() -> Dict[str, Any]:
             'vendor': 'Test Vendor',
             'domain': 'testing',
             'compatibility': '2.0.0',
+            'license': 'MIT',
             'pricing_tier': 'free'
         },
         'connection': {

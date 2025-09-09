@@ -28,7 +28,7 @@ class TestCLICommands:
         result = self.run_cli_command(['--help'])
         
         assert result.returncode == 0
-        assert 'Catalyst Pack Schema Tools' in result.stdout
+        assert 'Catalyst Pack Schemas' in result.stdout
         assert 'validate' in result.stdout
         assert 'create' in result.stdout
     
