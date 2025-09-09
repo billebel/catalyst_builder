@@ -62,7 +62,7 @@ class TestConnectionConfig:
     
     def test_rest_connection_config(self):
         """Test REST connection configuration."""
-        auth = AuthConfig(method=AuthMethod.BEARER, token='test_token')
+        auth = AuthConfig(method=AuthMethod.BEARER, config={'token': 'test_token'})
         
         connection = ConnectionConfig(
             type='rest',
@@ -75,11 +75,11 @@ class TestConnectionConfig:
         assert connection.base_url == 'https://api.test.com'
         assert connection.timeout == 30
         assert connection.auth.method == AuthMethod.BEARER
-        assert connection.auth.token == 'test_token'
+        assert connection.auth.config['token'] == 'test_token'
     
     def test_database_connection_config(self):
         """Test database connection configuration."""
-        auth = AuthConfig(method=AuthMethod.BASIC, username='user', password='pass')
+        auth = AuthConfig(method=AuthMethod.BASIC, config={'username': 'user', 'password': 'pass'})
         
         connection = ConnectionConfig(
             type='database',
@@ -98,7 +98,7 @@ class TestConnectionConfig:
     
     def test_ssh_connection_config(self):
         """Test SSH connection configuration."""
-        auth = AuthConfig(method=AuthMethod.KEY, private_key='/path/to/key')
+        auth = AuthConfig(method=AuthMethod.SSH_KEY, config={'private_key': '/path/to/key'})
         
         connection = ConnectionConfig(
             type='ssh',
@@ -119,48 +119,54 @@ class TestAuthConfig:
     
     def test_bearer_auth(self):
         """Test Bearer token authentication."""
-        auth = AuthConfig(method=AuthMethod.BEARER, token='bearer_token')
+        auth = AuthConfig(method=AuthMethod.BEARER, config={'token': 'bearer_token'})
         
         assert auth.method == AuthMethod.BEARER
-        assert auth.token == 'bearer_token'
+        assert auth.config['token'] == 'bearer_token'
     
     def test_basic_auth(self):
         """Test Basic authentication."""
         auth = AuthConfig(
             method=AuthMethod.BASIC,
-            username='testuser',
-            password='testpass'
+            config={
+                'username': 'testuser',
+                'password': 'testpass'
+            }
         )
         
         assert auth.method == AuthMethod.BASIC
-        assert auth.username == 'testuser'
-        assert auth.password == 'testpass'
+        assert auth.config['username'] == 'testuser'
+        assert auth.config['password'] == 'testpass'
     
     def test_api_key_auth(self):
         """Test API Key authentication."""
         auth = AuthConfig(
             method=AuthMethod.API_KEY,
-            api_key='test_api_key',
-            header_name='X-API-Key'
+            config={
+                'api_key': 'test_api_key',
+                'header_name': 'X-API-Key'
+            }
         )
         
         assert auth.method == AuthMethod.API_KEY
-        assert auth.api_key == 'test_api_key'
-        assert auth.header_name == 'X-API-Key'
+        assert auth.config['api_key'] == 'test_api_key'
+        assert auth.config['header_name'] == 'X-API-Key'
     
     def test_oauth_auth(self):
         """Test OAuth authentication."""
         auth = AuthConfig(
-            method=AuthMethod.OAUTH,
-            client_id='client123',
-            client_secret='secret123',
-            oauth_url='https://oauth.test.com'
+            method=AuthMethod.OAUTH2,
+            config={
+                'client_id': 'client123',
+                'client_secret': 'secret123',
+                'oauth_url': 'https://oauth.test.com'
+            }
         )
         
-        assert auth.method == AuthMethod.OAUTH
-        assert auth.client_id == 'client123'
-        assert auth.client_secret == 'secret123'
-        assert auth.oauth_url == 'https://oauth.test.com'
+        assert auth.method == AuthMethod.OAUTH2
+        assert auth.config['client_id'] == 'client123'
+        assert auth.config['client_secret'] == 'secret123'
+        assert auth.config['oauth_url'] == 'https://oauth.test.com'
 
 
 class TestToolDefinition:
@@ -435,8 +441,9 @@ class TestEnums:
         assert AuthMethod.BEARER.value == 'bearer'
         assert AuthMethod.BASIC.value == 'basic'
         assert AuthMethod.API_KEY.value == 'api_key'
-        assert AuthMethod.OAUTH.value == 'oauth'
-        assert AuthMethod.KEY.value == 'key'
+        assert AuthMethod.OAUTH2.value == 'oauth2'
+        assert AuthMethod.SSH_KEY.value == 'ssh_key'
+        assert AuthMethod.PASSTHROUGH.value == 'passthrough'
 
 
 class TestParameterDefinition:
