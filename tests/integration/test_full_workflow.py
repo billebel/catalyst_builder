@@ -130,6 +130,8 @@ class TestFullWorkflow:
                 'version': '1.0.0',
                 'description': 'Modular pack for testing',
                 'vendor': 'Modular Co',
+                'license': 'MIT',
+                'compatibility': '2.0.0',
                 'domain': 'modular',
                 'pricing_tier': 'free'
             },
@@ -302,6 +304,8 @@ class TestFullWorkflow:
                 'version': '1.0.0',
                 'description': 'Pack with errors',
                 'vendor': 'Error Co',
+                'license': 'MIT',
+                'compatibility': '2.0.0',
                 'domain': 'errors',
                 'pricing_tier': 'free'
             },
@@ -398,10 +402,15 @@ class TestFullWorkflow:
                         'version': '1.0.0',
                         'description': f'Pack with {conn_config["type"]} connection',
                         'vendor': 'Test Co',
+                        'license': 'MIT',
+                        'compatibility': '2.0.0',
                         'domain': 'testing',
                         'pricing_tier': 'free'
                     },
-                    'connection': {**conn_config, 'timeout': 30}
+                    'connection': {**conn_config, 'timeout': 30},
+                    'tools': {},
+                    'prompts': {},
+                    'resources': {}
                 }
                 del pack_data['connection']['expected_valid']
                 
