@@ -298,7 +298,7 @@ class CLI:
 
         try:
             installer.install(args.source)
-            print(f"✅ Pack installed successfully to {args.target}")
+            print(f"Pack installed successfully to {args.target}")
             return 0
         except Exception as e:
             print(f"Installation failed: {e}")

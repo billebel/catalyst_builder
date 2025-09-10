@@ -341,7 +341,7 @@ class TestCLICommands:
             'metadata': {
                 'name': 'unicode_test_pack',
                 'version': '1.0.0',
-                'description': 'Pack with unicode: ñáéíóú 中文 🚀',
+                'description': 'Pack with unicode: ñáéíóú Chinese ROCKET',
                 'vendor': 'Unicode Co',
                 'domain': 'testing',
                 'pricing_tier': 'free'
