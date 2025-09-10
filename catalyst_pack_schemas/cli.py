@@ -244,7 +244,7 @@ class CLI:
         try:
             # Use the standalone validate_pack_yaml function
             validation_result = validate_pack_yaml(str(file_path))
-            
+
             # Create a result object that matches the expected interface
             class ValidationResult:
                 def __init__(self, file_path, result_dict):
