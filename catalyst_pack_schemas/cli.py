@@ -12,7 +12,7 @@ from .builder import PackBuilder, PackFactory, create_pack
 from .installer import DeploymentOptions, DeploymentTarget, PackInstaller
 from .models import Pack
 from .utils import create_pack_index, discover_packs, get_pack_statistics, validate_pack_structure
-from .validators import PackValidator
+from .validators import PackValidator, validate_pack_yaml
 
 
 class CLI:
@@ -210,12 +210,18 @@ class CLI:
             result = self._validate_single_file(path, validator, args.strict)
             results.append(result)
         elif path.is_dir():
-            # Validate all pack files in directory
-            for pack_file in path.glob("**/*.yaml"):
-                if pack_file.name.startswith("."):
-                    continue
-                result = self._validate_single_file(pack_file, validator, args.strict)
+            # Look for main pack.yaml file first
+            pack_yaml = path / "pack.yaml"
+            if pack_yaml.exists():
+                result = self._validate_single_file(pack_yaml, validator, args.strict)
                 results.append(result)
+            else:
+                # If no pack.yaml, validate all YAML files in the root directory only
+                for pack_file in path.glob("*.yaml"):
+                    if pack_file.name.startswith("."):
+                        continue
+                    result = self._validate_single_file(pack_file, validator, args.strict)
+                    results.append(result)
         else:
             print(f"Error: Path {path} does not exist")
             return 1
@@ -236,9 +242,18 @@ class CLI:
     def _validate_single_file(self, file_path: Path, validator: PackValidator, strict: bool):
         """Validate a single pack file."""
         try:
-            result = validator.validate_pack_file(str(file_path), strict=strict)
-            result.file_path = str(file_path)
-            return result
+            # Use the standalone validate_pack_yaml function
+            validation_result = validate_pack_yaml(str(file_path))
+            
+            # Create a result object that matches the expected interface
+            class ValidationResult:
+                def __init__(self, file_path, result_dict):
+                    self.file_path = file_path
+                    self.is_valid = result_dict.get("valid", False)
+                    self.errors = result_dict.get("errors", [])
+                    self.warnings = result_dict.get("warnings", [])
+
+            return ValidationResult(str(file_path), validation_result)
         except Exception as e:
             # Create a failed result
             class FailedResult:
@@ -261,7 +276,7 @@ class CLI:
         print(f"Total: {total}, Passed: {passed}, Failed: {failed}\n")
 
         for result in results:
-            status = "✅ PASS" if result.is_valid else "❌ FAIL"
+            status = "PASS" if result.is_valid else "FAIL"
             print(f"{status} {result.file_path}")
 
             if not result.is_valid and hasattr(result, "errors"):
