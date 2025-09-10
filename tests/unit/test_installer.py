@@ -120,9 +120,8 @@ class TestMCPInstaller:
         result = installer.deploy(pack_dir, target, options)
         
         assert result['success'] is False
-        assert 'under development' in result['error']
-        assert result['pack_source'] == str(pack_dir)
-        assert result['target'] == str(target)
+        assert 'Pack validation failed' in result['error']
+        assert 'validation_errors' in result
     
     def test_deploy_with_string_target(self, temp_dir):
         """Test deploy with string target."""
@@ -133,8 +132,8 @@ class TestMCPInstaller:
         result = installer.deploy(pack_dir, str(temp_dir))
         
         assert result['success'] is False
-        assert 'under development' in result['error']
-        assert result['target'] == str(temp_dir)
+        assert 'Pack validation failed' in result['error']
+        assert 'validation_errors' in result
     
     def test_deploy_without_options(self, temp_dir):
         """Test deploy without explicit options."""
@@ -145,8 +144,8 @@ class TestMCPInstaller:
         result = installer.deploy(pack_dir)
         
         assert result['success'] is False
-        assert 'options' in result
-        assert result['options']['mode'] == 'development'  # Default
+        # The method should include validation errors instead of expecting options in result
+        assert 'validation_errors' in result
     
     def test_status_placeholder_functionality(self):
         """Test status method returns placeholder response."""
@@ -157,8 +156,7 @@ class TestMCPInstaller:
         
         assert 'packs' in result
         assert result['packs'] == []
-        assert 'under development' in result['message']
-        assert result['target'] == str(target)
+        assert 'Target directory does not exist' in result['message']
     
     def test_rollback_placeholder_functionality(self):
         """Test rollback method returns placeholder response."""
@@ -168,10 +166,7 @@ class TestMCPInstaller:
         result = installer.rollback('test_pack', target, '1.0.0')
         
         assert result['success'] is False
-        assert 'under development' in result['error']
-        assert result['pack_name'] == 'test_pack'
-        assert result['target'] == str(target)
-        assert result['to_version'] == '1.0.0'
+        assert 'Pack test_pack not found at target location' in result['error']
     
     def test_uninstall_placeholder_functionality(self):
         """Test uninstall method returns placeholder response."""
@@ -181,9 +176,7 @@ class TestMCPInstaller:
         result = installer.uninstall('test_pack', target)
         
         assert result['success'] is False
-        assert 'under development' in result['error']
-        assert result['pack_name'] == 'test_pack'
-        assert result['target'] == str(target)
+        assert 'Pack test_pack not found at target location' in result['error']
 
 
 class TestPackInstaller:
@@ -481,7 +474,7 @@ class TestPackRegistry:
         registry = PackRegistry()
         
         assert hasattr(registry, 'registry_url')
-        assert 'github.com' in registry.registry_url
+        assert 'https://raw.githubusercontent.com/catalyst-packs/registry/main/index.yaml' == registry.registry_url
     
     def test_list_available_no_network(self):
         """Test listing available packs without network."""

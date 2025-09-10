@@ -154,3 +154,7 @@ temp/
 # Logs
 *.log
 logs/
+
+# Claude AI artifacts and planning files
+CLAUDE.md
+PLAN.md

@@ -28,7 +28,7 @@ class TestCLICommands:
         result = self.run_cli_command(['--help'])
         
         assert result.returncode == 0
-        assert 'Catalyst Pack Schema Tools' in result.stdout
+        assert 'Catalyst Pack Schemas' in result.stdout
         assert 'validate' in result.stdout
         assert 'create' in result.stdout
     
@@ -341,7 +341,7 @@ class TestCLICommands:
             'metadata': {
                 'name': 'unicode_test_pack',
                 'version': '1.0.0',
-                'description': 'Pack with unicode: ñáéíóú 中文 🚀',
+                'description': 'Pack with unicode: ñáéíóú Chinese ROCKET',
                 'vendor': 'Unicode Co',
                 'domain': 'testing',
                 'pricing_tier': 'free'

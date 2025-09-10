@@ -89,7 +89,7 @@
           "properties": {
             "method": {
               "type": "string",
-              "enum": ["basic", "bearer", "api_key", "oauth2", "aws_iam", "ssh_key", "certificate", "kerberos", "custom"]
+              "enum": ["basic", "bearer", "api_key", "oauth2", "aws_iam", "ssh_key", "certificate", "kerberos", "passthrough", "custom"]
             },
             "config": {
               "type": "object",
