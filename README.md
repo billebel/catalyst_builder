@@ -12,6 +12,19 @@ pip install catalyst-builder
 
 Knowledge Packs are YAML configurations that define tools for integrating with external systems through the MCP (Model Context Protocol).
 
+## What's New in v1.1.0
+
+**LLM-Optimized Knowledge Packs** - New optional features to improve AI tool discovery and usage:
+
+- **Smart Tool Metadata** - Display names, usage hints, complexity levels
+- **Parameter Constraints** - Min/max values, examples, validation patterns  
+- **Tool Prerequisites** - Define safe tool usage sequences
+- **External Transforms** - Reference Python/JS files for better maintainability
+
+All features are **100% backward compatible** - existing packs continue to work unchanged!
+
+See the [LLM Optimization Guide](docs/LLM_OPTIMIZATION.md) for details.
+
 ## Pack Structure
 
 ```yaml

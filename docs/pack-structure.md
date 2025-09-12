@@ -40,6 +40,25 @@ tools:
     type: "list"
     description: "Get data from API"
     endpoint: "/data"
+    
+    # NEW in v1.1.0: Optional LLM optimization
+    llm_metadata:
+      display_name: "📊 Get Data"
+      usage_hint: "Use this to retrieve data from the API"
+      complexity: "basic"
+      examples:
+        - scenario: "User wants to see available data"
+          usage: "Call this tool first to explore what's available"
+    
+    # Parameters with optional constraints
+    parameters:
+      - name: "limit"
+        type: "integer"
+        description: "Maximum items to return"
+        constraints:  # NEW in v1.1.0
+          min: 1
+          max: 1000
+          examples: [10, 50, 100]
 ```
 
 ## Pack Categories

@@ -191,7 +191,66 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "description": "HTTP headers to include in the request"
+        },
+        "query_params": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "URL query parameters for REST API calls"
+        },
+        "form_data": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Form-encoded body parameters for POST requests"
+        },
+        "llm_metadata": {
+          "type": "object",
+          "description": "Optional metadata to optimize LLM tool discovery and usage",
+          "properties": {
+            "display_name": {
+              "type": "string",
+              "description": "Human-friendly name with optional emoji for better LLM recognition"
+            },
+            "usage_hint": {
+              "type": "string",
+              "description": "Guidance on when an LLM should use this tool"
+            },
+            "complexity": {
+              "type": "string",
+              "enum": ["basic", "intermediate", "advanced"],
+              "description": "Tool complexity level to guide LLM tool selection"
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Tools that should be used before this one"
+            },
+            "examples": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "scenario": {
+                    "type": "string",
+                    "description": "Description of when to use this tool"
+                  },
+                  "usage": {
+                    "type": "string",
+                    "description": "Example of how to use the tool"
+                  }
+                }
+              },
+              "description": "Usage examples to help LLMs understand the tool"
+            }
+          },
+          "additionalProperties": false
         }
       }
     },
@@ -218,7 +277,39 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Allowed values for this parameter"
+        },
+        "constraints": {
+          "type": "object",
+          "description": "Optional validation constraints for the parameter",
+          "properties": {
+            "min": {
+              "type": "number",
+              "description": "Minimum value for numeric parameters"
+            },
+            "max": {
+              "type": "number",
+              "description": "Maximum value for numeric parameters"
+            },
+            "min_length": {
+              "type": "integer",
+              "description": "Minimum length for string parameters"
+            },
+            "max_length": {
+              "type": "integer",
+              "description": "Maximum length for string parameters"
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Regular expression pattern for string validation"
+            },
+            "examples": {
+              "type": "array",
+              "description": "Example values to guide LLM parameter selection"
+            }
+          },
+          "additionalProperties": false
         }
       }
     },
@@ -231,16 +322,24 @@
           "enum": ["jq", "javascript", "python", "template"]
         },
         "expression": {
-          "type": "string"
+          "type": "string",
+          "description": "JQ expression for transforming JSON responses"
         },
         "code": {
-          "type": "string"
+          "type": "string",
+          "description": "Inline JavaScript or Python code for transformation"
         },
         "template": {
-          "type": "string"
+          "type": "string",
+          "description": "Jinja2 template for transformation"
         },
         "file": {
-          "type": "string"
+          "type": "string",
+          "description": "Path to external transform file relative to pack root (Python/JavaScript)"
+        },
+        "function": {
+          "type": "string",
+          "description": "Function name to call in external transform file (used with 'file' parameter)"
         }
       }
     },
