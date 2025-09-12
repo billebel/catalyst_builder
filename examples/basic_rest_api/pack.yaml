@@ -2,7 +2,10 @@ metadata:
   name: basic-rest-api
   version: 1.0.0
   description: Basic REST API integration example
-  author: Catalyst Team
+  vendor: Catalyst Team
+  license: MIT
+  compatibility: "^1.0.0"
+  domain: example
   tags:
     - rest
     - api
@@ -16,13 +19,13 @@ connection:
     token: "${API_TOKEN}"
 
 tools:
-  - name: list_items
+  list_items:
     type: list
     description: List all items from the API
     endpoint: /items
     method: GET
     
-  - name: get_item
+  get_item:
     type: details
     description: Get details for a specific item
     endpoint: /items/{id}
@@ -33,7 +36,7 @@ tools:
         required: true
         description: Item ID to retrieve
         
-  - name: search_items
+  search_items:
     type: search
     description: Search for items
     endpoint: /search
@@ -50,7 +53,7 @@ tools:
         description: Maximum number of results
 
 prompts:
-  - name: summarize_item
+  summarize_item:
     description: Summarize item information
     template: |
       Please summarize the following item information:

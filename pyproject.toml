@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "catalyst-builder"
-version = "1.0.0"
+version = "1.1.0"
 description = "Build AI-powered integrations for any business system in minutes"
 readme = "README.md"
 authors = [
