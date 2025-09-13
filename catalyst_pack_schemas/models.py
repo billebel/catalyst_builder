@@ -6,6 +6,9 @@ from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
+# Import RAG models if needed
+from .rag_models import RAGConfiguration
+
 
 class PackValidationError(Exception):
     """Raised when a pack fails validation."""
@@ -25,6 +28,8 @@ class ToolType(Enum):
     STREAM = "stream"  # Real-time data streams
     BATCH = "batch"  # Batch operations
     TRANSACTION = "transaction"  # Multi-step transactions
+    RAG_SEARCH = "rag_search"  # RAG vector search
+    RAG_INDEX = "rag_index"  # RAG document indexing
 
 
 class AuthMethod(Enum):
@@ -244,6 +249,9 @@ class Pack:
     resources: Dict[str, ResourceDefinition] = field(default_factory=dict)
     structure: Optional[Dict[str, List[str]]] = None  # Modular pack structure references
     error_mapping: Dict[str, str] = field(default_factory=dict)
+    
+    # RAG configuration (optional)
+    rag_configuration: Optional[RAGConfiguration] = None
 
     @classmethod
     def from_yaml_file(cls, yaml_path: str) -> "Pack":
@@ -451,6 +459,11 @@ class Pack:
             )
             resources[resource_name] = resource
 
+        # Parse RAG configuration if present
+        rag_config = None
+        if "rag_configuration" in data and data["rag_configuration"]:
+            rag_config = RAGConfiguration.from_dict(data["rag_configuration"])
+
         return cls(
             metadata=metadata,
             connection=connection,
@@ -459,4 +472,5 @@ class Pack:
             resources=resources,
             structure=data.get("structure"),  # Parse modular structure references
             error_mapping=data.get("error_mapping", {}),
+            rag_configuration=rag_config,
         )

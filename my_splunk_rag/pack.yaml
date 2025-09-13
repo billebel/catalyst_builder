@@ -1,0 +1,48 @@
+metadata:
+  name: "my_splunk_rag"
+  version: "1.0.0"
+  description: "RAG-enabled pack with qdrant"
+  vendor: "Community"
+  license: "MIT"
+  compatibility: "1.0"
+  domain: "rag"
+
+connection:
+  type: "rest"
+  base_url: "${BASE_API_URL}"
+
+rag_configuration:
+  enabled: true
+  provider: "qdrant"
+  qdrant_config:
+    qdrant_url: "http://localhost:6333"
+    collection_name: "splunk_docs"
+    colpali_model: "vidore/colpali-v1.2"
+    colpali_device: "cuda"
+    enable_quantization: true
+    enable_two_stage_retrieval: true
+  access_level: "global"
+
+tools:
+  search_documents:
+    type: "rag_search"
+    description: "Search documents using visual understanding"
+    parameters:
+      - name: "query"
+        type: "string"
+        required: true
+        description: "Search query"
+      - name: "top_k"
+        type: "integer"
+        required: false
+        default: 5
+        description: "Number of results"
+  
+  index_document:
+    type: "rag_index"
+    description: "Index a document for search"
+    parameters:
+      - name: "document_path"
+        type: "string"
+        required: true
+        description: "Path to document"

@@ -1,0 +1,204 @@
+# RAG-Enabled Knowledge Pack Template
+# This template demonstrates how to configure visual document search
+# using Qdrant and ColPali for multi-modal RAG capabilities
+
+metadata:
+  name: "my_rag_pack"
+  version: "1.0.0"
+  description: "Visual document search with ColPali and Qdrant"
+  vendor: "Your Organization"
+  license: "MIT"
+  compatibility: "1.0"
+  domain: "document_search"
+  tags:
+    - "rag"
+    - "visual-search"
+    - "colpali"
+    - "qdrant"
+  pricing_tier: "free"
+  required_capabilities:
+    - "vector_search"
+    - "document_processing"
+
+connection:
+  type: "rest"
+  base_url: "${BASE_API_URL}"
+  timeout: 60
+  verify_ssl: true
+  retry_policy:
+    max_retries: 3
+    backoff: "exponential"
+    backoff_factor: 1.0
+  auth:
+    method: "bearer"
+    config:
+      token: "${API_TOKEN}"
+
+# RAG Configuration Section
+rag_configuration:
+  enabled: true
+  provider: "qdrant"
+  
+  # Qdrant-specific settings
+  qdrant_config:
+    qdrant_url: "${QDRANT_URL:http://localhost:6333}"
+    qdrant_api_key: "${QDRANT_API_KEY:}"
+    collection_name: "documents"
+    
+    # ColPali model for visual document processing
+    colpali_model: "vidore/colpali-v1.2"
+    colpali_device: "cuda"  # or "cpu" for non-GPU
+    
+    # Performance optimizations
+    enable_quantization: true  # 90% storage reduction
+    enable_two_stage_retrieval: true  # 13x faster search
+    
+    # Vector settings
+    vector_size: 128
+    distance_metric: "cosine"
+    
+    # Processing settings
+    batch_size: 32
+    max_retries: 3
+    timeout_seconds: 60
+    on_disk_payload: false
+  
+  # Document processing
+  supported_formats:
+    - "pdf"
+    - "png" 
+    - "jpg"
+    - "jpeg"
+  auto_index: false
+  chunk_size: 1000
+  chunk_overlap: 200
+  
+  # Search settings
+  default_top_k: 5
+  score_threshold: 0.7
+  
+  # Cost management
+  enable_cost_tracking: true
+  monthly_budget_usd: 100.0
+  
+  # Access control (simplified for MVP)
+  access_level: "global"  # All documents are globally accessible
+
+# RAG-Enhanced Tools
+tools:
+  # Visual document search
+  search_documents:
+    type: "rag_search"
+    description: "Search documents using visual understanding with ColPali"
+    parameters:
+      - name: "query"
+        type: "string"
+        required: true
+        description: "Natural language search query"
+      - name: "top_k"
+        type: "integer"
+        required: false
+        default: 5
+        description: "Number of results to return"
+        min_value: 1
+        max_value: 20
+      - name: "filter_type"
+        type: "string"
+        required: false
+        description: "Optional document type filter"
+        enum: ["pdf", "image", "all"]
+        default: "all"
+    # RAG will automatically enhance this tool with vector search
+    
+  # Document indexing
+  index_document:
+    type: "rag_index"
+    description: "Index a document for visual search"
+    parameters:
+      - name: "document_path"
+        type: "string"
+        required: true
+        description: "Path to document to index"
+      - name: "document_id"
+        type: "string"
+        required: false
+        description: "Optional custom document ID"
+      - name: "metadata"
+        type: "object"
+        required: false
+        description: "Additional metadata to store with document"
+    
+  # RAG statistics
+  get_rag_stats:
+    type: "list"
+    description: "Get RAG system statistics and health"
+    endpoint: "/rag/stats"
+    method: "GET"
+    # This could query Qdrant for collection stats
+    
+  # Traditional search (non-RAG) for comparison
+  traditional_search:
+    type: "search"
+    description: "Traditional keyword search without RAG"
+    endpoint: "/search"
+    method: "POST"
+    parameters:
+      - name: "query"
+        type: "string"
+        required: true
+        description: "Search query"
+    # This tool does NOT use RAG
+
+# Prompts to guide AI behavior with RAG
+prompts:
+  visual_search_guidance:
+    description: "Guide AI on when to use visual search"
+    template: |
+      When searching for information in documents:
+      1. Use 'search_documents' for visual/layout-aware searches
+      2. This is especially effective for:
+         - Technical diagrams and screenshots
+         - Tables and structured data
+         - Multi-column layouts
+         - Documents with mixed text and images
+      3. The search understands spatial relationships in documents
+    suggested_tools:
+      - "search_documents"
+      - "get_rag_stats"
+      
+  indexing_guidance:
+    description: "Guide AI on document indexing"
+    template: |
+      When users provide documents to index:
+      1. Use 'index_document' to add them to the RAG system
+      2. Supported formats: PDF, PNG, JPG, JPEG
+      3. Each document is processed with ColPali for visual understanding
+      4. Indexing may take a few seconds for large documents
+    suggested_tools:
+      - "index_document"
+      - "get_rag_stats"
+
+# Resources and documentation
+resources:
+  qdrant_docs:
+    type: "documentation"
+    url: "https://qdrant.tech/documentation/"
+    description: "Qdrant vector database documentation"
+    
+  colpali_paper:
+    type: "research"
+    url: "https://arxiv.org/abs/2407.01449"
+    description: "ColPali research paper on visual document retrieval"
+    
+  catalyst_rag_guide:
+    type: "guide"
+    url: "https://github.com/your-org/catalyst/docs/rag-guide.md"
+    description: "Complete guide to Catalyst RAG features"
+
+# Error handling for RAG operations
+error_mapping:
+  "QDRANT_CONNECTION_ERROR": "Unable to connect to Qdrant. Check your QDRANT_URL and API key."
+  "COLPALI_MODEL_ERROR": "Failed to load ColPali model. Ensure you have sufficient GPU memory."
+  "DOCUMENT_FORMAT_ERROR": "Unsupported document format. Supported: PDF, PNG, JPG, JPEG"
+  "QUOTA_EXCEEDED": "Monthly RAG budget exceeded. Increase budget or wait for next month."
+  "NO_RESULTS": "No matching documents found. Try a different query or index more documents."
