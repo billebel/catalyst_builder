@@ -121,23 +121,37 @@ class CLI:
         uninstall_parser.add_argument("--target", "-t", help="Deployment target")
 
         # RAG command (for RAG-specific operations)
-        rag_parser = subparsers.add_parser("rag", help="RAG (Retrieval Augmented Generation) operations")
+        rag_parser = subparsers.add_parser(
+            "rag", help="RAG (Retrieval Augmented Generation) operations"
+        )
         rag_subparsers = rag_parser.add_subparsers(dest="rag_command", help="RAG commands")
-        
+
         # RAG init subcommand
         rag_init_parser = rag_subparsers.add_parser("init", help="Initialize RAG-enabled pack")
         rag_init_parser.add_argument("name", help="Pack name")
-        rag_init_parser.add_argument("--provider", choices=["qdrant"], default="qdrant", help="RAG provider")
+        rag_init_parser.add_argument(
+            "--provider", choices=["qdrant"], default="qdrant", help="RAG provider"
+        )
         rag_init_parser.add_argument("--output", "-o", default=".", help="Output directory")
-        rag_init_parser.add_argument("--qdrant-url", default="http://localhost:6333", help="Qdrant server URL")
-        rag_init_parser.add_argument("--collection", default="documents", help="Qdrant collection name")
-        rag_init_parser.add_argument("--colpali-model", default="vidore/colpali-v1.2", help="ColPali model")
-        rag_init_parser.add_argument("--device", choices=["cuda", "cpu"], default="cuda", help="Processing device")
-        
+        rag_init_parser.add_argument(
+            "--qdrant-url", default="http://localhost:6333", help="Qdrant server URL"
+        )
+        rag_init_parser.add_argument(
+            "--collection", default="documents", help="Qdrant collection name"
+        )
+        rag_init_parser.add_argument(
+            "--colpali-model", default="vidore/colpali-v1.2", help="ColPali model"
+        )
+        rag_init_parser.add_argument(
+            "--device", choices=["cuda", "cpu"], default="cuda", help="Processing device"
+        )
+
         # RAG validate subcommand
-        rag_validate_parser = rag_subparsers.add_parser("validate", help="Validate RAG configuration")
+        rag_validate_parser = rag_subparsers.add_parser(
+            "validate", help="Validate RAG configuration"
+        )
         rag_validate_parser.add_argument("pack", help="Pack path to validate")
-        
+
         # RAG test subcommand
         rag_test_parser = rag_subparsers.add_parser("test", help="Test RAG connection")
         rag_test_parser.add_argument("pack", help="Pack path with RAG config")
@@ -531,11 +545,11 @@ This is a Catalyst pack for {name} integration.
 
     def _handle_rag_command(self, args) -> int:
         """Handle RAG subcommands."""
-        if not hasattr(args, 'rag_command') or not args.rag_command:
+        if not hasattr(args, "rag_command") or not args.rag_command:
             print("Error: RAG subcommand required")
             print("Available commands: init, validate, test")
             return 1
-        
+
         if args.rag_command == "init":
             return self._rag_init(args)
         elif args.rag_command == "validate":
@@ -545,27 +559,27 @@ This is a Catalyst pack for {name} integration.
         else:
             print(f"Unknown RAG command: {args.rag_command}")
             return 1
-    
+
     def _rag_init(self, args) -> int:
         """Initialize RAG-enabled pack."""
-        from pathlib import Path
         import shutil
-        
+        from pathlib import Path
+
         print(f"Creating RAG-enabled pack: {args.name}")
         print(f"Provider: {args.provider}")
         print(f"Qdrant URL: {args.qdrant_url}")
         print(f"Collection: {args.collection}")
         print(f"ColPali Model: {args.colpali_model}")
         print(f"Device: {args.device}")
-        
+
         try:
             # Create pack directory
             pack_dir = Path(args.output) / args.name
             pack_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Copy template file
             template_path = Path(__file__).parent / "templates" / "rag_pack_template.yaml"
-            
+
             if not template_path.exists():
                 # Create a minimal template inline if file doesn't exist
                 template_content = f"""metadata:
@@ -618,20 +632,22 @@ tools:
         description: "Path to document"
 """
             else:
-                with open(template_path, 'r') as f:
+                with open(template_path, "r") as f:
                     template_content = f.read()
-                
+
                 # Replace template placeholders
                 template_content = template_content.replace("my_rag_pack", args.name)
-                template_content = template_content.replace("http://localhost:6333", args.qdrant_url)
+                template_content = template_content.replace(
+                    "http://localhost:6333", args.qdrant_url
+                )
                 template_content = template_content.replace('"documents"', f'"{args.collection}"')
                 template_content = template_content.replace('"cuda"', f'"{args.device}"')
-            
+
             # Write pack.yaml
             pack_file = pack_dir / "pack.yaml"
-            with open(pack_file, 'w') as f:
+            with open(pack_file, "w") as f:
                 f.write(template_content)
-            
+
             print(f"[OK] Created RAG pack at: {pack_dir}")
             print(f"[*] Pack configuration: {pack_file}")
             print("")
@@ -640,40 +656,40 @@ tools:
             print(f"2. Set up Qdrant server at {args.qdrant_url}")
             print(f"3. Test RAG connection: catalyst-packs rag test {pack_dir}")
             print(f"4. Validate pack: catalyst-packs validate {pack_dir}")
-            
+
             return 0
-            
+
         except Exception as e:
             print(f"[X] Failed to create RAG pack: {e}")
             return 1
-    
+
     def _rag_validate(self, args) -> int:
         """Validate RAG configuration in pack."""
         from pathlib import Path
-        
+
         pack_path = Path(args.pack)
         if not pack_path.exists():
             print(f"[X] Pack path does not exist: {pack_path}")
             return 1
-            
+
         # Load and validate pack
         pack_file = pack_path / "pack.yaml" if pack_path.is_dir() else pack_path
-        
+
         if not pack_file.exists():
             print(f"[X] Pack file not found: {pack_file}")
             return 1
-            
+
         try:
             pack = Pack.from_yaml_file(str(pack_file))
-            
+
             if not pack.rag_configuration or not pack.rag_configuration.enabled:
                 print("[!] Pack does not have RAG enabled")
                 return 1
-                
+
             rag_config = pack.rag_configuration
             print(f"[OK] RAG configuration valid for pack: {pack.metadata.name}")
             print(f"   Provider: {rag_config.provider.value}")
-            
+
             if rag_config.qdrant_config:
                 qc = rag_config.qdrant_config
                 print(f"   Qdrant URL: {qc.qdrant_url}")
@@ -682,33 +698,36 @@ tools:
                 print(f"   Device: {qc.colpali_device}")
                 print(f"   Quantization: {qc.enable_quantization}")
                 print(f"   Two-stage retrieval: {qc.enable_two_stage_retrieval}")
-                
+
             # Count RAG tools
-            rag_tools = [tool for tool in pack.tools.values() 
-                        if tool.type.value in ["rag_search", "rag_index"]]
+            rag_tools = [
+                tool
+                for tool in pack.tools.values()
+                if tool.type.value in ["rag_search", "rag_index"]
+            ]
             print(f"   RAG Tools: {len(rag_tools)}")
-            
+
             for tool in rag_tools:
                 print(f"     - {tool.name} ({tool.type.value})")
-                
+
             return 0
-            
+
         except Exception as e:
             print(f"[X] RAG validation failed: {e}")
             return 1
-    
+
     def _rag_test(self, args) -> int:
         """Test RAG connection and functionality."""
         print("[!] RAG testing functionality is under development")
         print("   This will test Qdrant connectivity and ColPali model loading")
         print(f"   Pack: {args.pack}")
-        
+
         if args.index_sample:
             print(f"   Sample document to index: {args.index_sample}")
-            
+
         if args.search_query:
             print(f"   Sample search query: {args.search_query}")
-            
+
         # TODO: Implement actual RAG testing
         # This would:
         # 1. Load pack configuration
@@ -716,7 +735,7 @@ tools:
         # 3. Test ColPali model loading
         # 4. If sample doc provided, test indexing
         # 5. If query provided, test search
-        
+
         return 0
 
 
