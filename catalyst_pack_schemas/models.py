@@ -250,7 +250,7 @@ class Pack:
     resources: Dict[str, ResourceDefinition] = field(default_factory=dict)
     structure: Optional[Dict[str, List[str]]] = None  # Modular pack structure references
     error_mapping: Dict[str, str] = field(default_factory=dict)
-    
+
     # RAG configuration (optional)
     rag_configuration: Optional[RAGConfiguration] = None
 
